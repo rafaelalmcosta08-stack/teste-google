@@ -37,6 +37,7 @@ interface Course {
   id: string
   title: string
   description: string
+  requirements?: string
   startDate: string
   endDate: string
   vagasLimit: number
@@ -70,6 +71,7 @@ export default function CursosPage() {
   // Form State
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [requirements, setRequirements] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [vagasLimit, setVagasLimit] = useState('20')
@@ -81,6 +83,7 @@ export default function CursosPage() {
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
+  const [editRequirements, setEditRequirements] = useState('')
   const [editStartDate, setEditStartDate] = useState('')
   const [editEndDate, setEditEndDate] = useState('')
   const [editVagasLimit, setEditVagasLimit] = useState('')
@@ -302,6 +305,7 @@ export default function CursosPage() {
           action: 'create',
           title,
           description,
+          requirements,
           startDate,
           endDate,
           vagasLimit,
@@ -316,6 +320,7 @@ export default function CursosPage() {
       // Reset Form
       setTitle('')
       setDescription('')
+      setRequirements('')
       setStartDate('')
       setEndDate('')
       setVagasLimit('20')
@@ -360,6 +365,7 @@ export default function CursosPage() {
           id: editingCourse.id,
           title: editTitle,
           description: editDescription,
+          requirements: editRequirements,
           startDate: editStartDate,
           endDate: editEndDate,
           vagasLimit: editVagasLimit,
@@ -501,6 +507,7 @@ export default function CursosPage() {
     setEditingCourse(course)
     setEditTitle(course.title)
     setEditDescription(course.description)
+    setEditRequirements(course.requirements || '')
     setEditStartDate(course.startDate)
     setEditEndDate(course.endDate)
     setEditVagasLimit(course.vagasLimit.toString())
@@ -831,14 +838,26 @@ export default function CursosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-muted-foreground">O que vai ser / Descrição</label>
+                  <label className="block text-sm font-medium text-muted-foreground">Descrição (conteúdo do curso) *</label>
                   <textarea
                     required
-                    rows={4}
+                    rows={3}
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                     className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3.5 py-2.5 text-sm outline-none focus:border-foreground resize-none"
-                    placeholder="Detalhes completos sobre o curso, conteúdo programático, locais e regras gerais."
+                    placeholder="Conteúdo programático, o que vai ser ensinado, etc."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">Requisitos (o que é exigido para participar) *</label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={editRequirements}
+                    onChange={(e) => setEditRequirements(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3.5 py-2.5 text-sm outline-none focus:border-foreground resize-none"
+                    placeholder="Fardamento, patentes exigidas, pré-requisitos técnicos."
                   />
                 </div>
 
@@ -1100,8 +1119,21 @@ export default function CursosPage() {
                                   className="overflow-hidden"
                                 >
                                   <div className="mt-4 space-y-4 rounded-lg bg-secondary/20 p-4 text-sm text-muted-foreground border border-border/30">
-                                    <div className="space-y-1.5 whitespace-pre-wrap leading-relaxed text-foreground/90">
-                                      {course.description}
+                                    <div className="space-y-3">
+                                      <div>
+                                        <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider block mb-1">Descrição:</span>
+                                        <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                          {course.description}
+                                        </div>
+                                      </div>
+                                      {course.requirements && (
+                                        <div>
+                                          <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider block mb-1">Requisitos:</span>
+                                          <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                            {course.requirements}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
 
                                     {/* Subscribers list section */}
@@ -1237,8 +1269,21 @@ export default function CursosPage() {
                                 className="overflow-hidden"
                               >
                                 <div className="mt-4 space-y-4 rounded-lg bg-secondary/15 p-4 text-xs text-muted-foreground border border-border/20">
-                                  <div className="whitespace-pre-wrap leading-relaxed">
-                                    {course.description}
+                                  <div className="space-y-3">
+                                    <div>
+                                      <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider block mb-1">Descrição:</span>
+                                      <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                        {course.description}
+                                      </div>
+                                    </div>
+                                    {course.requirements && (
+                                      <div>
+                                        <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider block mb-1">Requisitos:</span>
+                                        <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                          {course.requirements}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
 
                                   {/* List of final participants */}
@@ -1436,15 +1481,29 @@ export default function CursosPage() {
 
                       <div>
                         <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                          Descrição / Requisitos *
+                          Descrição (o que vai ser / conteúdo do curso) *
                         </label>
                         <textarea
                           required
-                          rows={4}
+                          rows={3}
                           value={description}
                           onChange={(e) => setDescription(e.target.value)}
                           className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground resize-none"
-                          placeholder="Especifique fardamento, requisitos, locais e conteúdo programático."
+                          placeholder="Especifique o conteúdo programático, as aulas, etc."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Requisitos (o que é exigido para participar) *
+                        </label>
+                        <textarea
+                          required
+                          rows={3}
+                          value={requirements}
+                          onChange={(e) => setRequirements(e.target.value)}
+                          className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground resize-none"
+                          placeholder="Especifique fardamento, patentes ou pré-requisitos."
                         />
                       </div>
 

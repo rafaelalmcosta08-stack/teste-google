@@ -16,6 +16,7 @@ export interface Edital {
   id: string
   title: string
   description: string
+  requirements?: string
   unidade: 'GAEP' | 'GTM' | 'GAR' | 'BOPE' | 'CORE' | 'Corregedoria' | 'APM' | 'Geral'
   linkFormulario: string
   endDate: string // "YYYY-MM-DDTHH:mm" format in Brasília time
@@ -128,8 +129,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Permissão insuficiente para criar editais.' }, { status: 403 })
     }
 
-    const { title, description, unidade, linkFormulario, endDate } = body
-    if (!title?.trim() || !description?.trim() || !unidade || !linkFormulario?.trim() || !endDate) {
+    const { title, description, requirements, unidade, linkFormulario, endDate } = body
+    if (!title?.trim() || !description?.trim() || !requirements?.trim() || !unidade || !linkFormulario?.trim() || !endDate) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
 
@@ -163,6 +164,7 @@ export async function POST(req: NextRequest) {
       id: Math.random().toString(36).substring(2, 15),
       title: title.trim(),
       description: description.trim(),
+      requirements: requirements.trim(),
       unidade,
       linkFormulario: linkFormulario.trim(),
       endDate,
@@ -180,7 +182,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'edit') {
-    const { id, title, description, unidade, linkFormulario, endDate } = body
+    const { id, title, description, requirements, unidade, linkFormulario, endDate } = body
     const editalIndex = editais.findIndex(e => e.id === id)
     if (editalIndex === -1) {
       return NextResponse.json({ error: 'Edital não encontrado.' }, { status: 404 })
@@ -208,7 +210,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não é possível editar um edital que já foi encerrado.' }, { status: 400 })
     }
 
-    if (!title?.trim() || !description?.trim() || !unidade || !linkFormulario?.trim() || !endDate) {
+    if (!title?.trim() || !description?.trim() || !requirements?.trim() || !unidade || !linkFormulario?.trim() || !endDate) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
 
@@ -240,6 +242,7 @@ export async function POST(req: NextRequest) {
 
     edital.title = title.trim()
     edital.description = description.trim()
+    edital.requirements = requirements.trim()
     edital.unidade = unidade
     edital.linkFormulario = linkFormulario.trim()
     edital.endDate = endDate

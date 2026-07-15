@@ -37,6 +37,7 @@ interface Course {
   id: string
   title: string
   description: string
+  requirements?: string
   startDate: string
   endDate: string
   vagasLimit: number
@@ -49,6 +50,8 @@ interface Course {
 interface Edital {
   id: string
   title: string
+  description?: string
+  requirements?: string
   unidade: string
   endDate: string
   creatorId: string
@@ -59,6 +62,8 @@ type FeedItem = {
   id: string
   type: 'curso' | 'edital'
   title: string
+  description?: string
+  requirements?: string
   relevantDate: string
   sortDate: string
   badgeText: string
@@ -188,6 +193,8 @@ export default function PainelPage() {
       id: c.id,
       type: 'curso',
       title: c.title,
+      description: c.description,
+      requirements: c.requirements,
       relevantDate: `Início: ${formatDateTime(c.startDate)}`,
       sortDate: c.startDate,
       badgeText: 'Curso',
@@ -199,6 +206,8 @@ export default function PainelPage() {
       id: e.id,
       type: 'edital',
       title: e.title,
+      description: e.description,
+      requirements: e.requirements,
       relevantDate: `Prazo final: ${formatDateTime(e.endDate)}`,
       sortDate: e.endDate,
       badgeText: 'Edital',
@@ -600,6 +609,22 @@ export default function PainelPage() {
                         <div className="text-[11px] font-semibold text-muted-foreground font-mono flex items-center gap-1 bg-secondary/20 px-2 py-0.5 rounded border border-border/25">
                           <Calendar className="h-3 w-3 shrink-0" />
                           <span>{item.relevantDate}</span>
+                        </div>
+                      </div>
+
+                      {/* Description & Requirements Display */}
+                      <div className="mt-3.5 space-y-3 text-xs text-muted-foreground/90 border-t border-border/10 pt-3">
+                        <div>
+                          <span className="text-[9px] font-bold text-foreground/60 uppercase tracking-wider block mb-0.5">Descrição:</span>
+                          <p className="line-clamp-2 text-[11px] leading-relaxed text-foreground/80">
+                            {item.description || 'Nenhuma descrição detalhada informada.'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[9px] font-bold text-foreground/60 uppercase tracking-wider block mb-0.5">Requisitos:</span>
+                          <p className="line-clamp-2 text-[11px] leading-relaxed text-foreground/80">
+                            {item.requirements || 'Nenhum requisito específico informado.'}
+                          </p>
                         </div>
                       </div>
 

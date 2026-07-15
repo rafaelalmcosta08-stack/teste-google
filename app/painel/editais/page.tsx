@@ -26,6 +26,7 @@ export interface Edital {
   id: string
   title: string
   description: string
+  requirements?: string
   unidade: 'GAEP' | 'GTM' | 'GAR' | 'BOPE' | 'CORE' | 'Corregedoria' | 'APM' | 'Geral'
   linkFormulario: string
   endDate: string // "YYYY-MM-DDTHH:mm" format in Brasília time
@@ -56,6 +57,7 @@ export default function EditaisPage() {
   // Form State for Publication
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [requirements, setRequirements] = useState('')
   const [unidade, setUnidade] = useState('')
   const [linkFormulario, setLinkFormulario] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -65,12 +67,14 @@ export default function EditaisPage() {
   const [editingEdital, setEditingEdital] = useState<Edital | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
+  const [editRequirements, setEditRequirements] = useState('')
   const [editUnidade, setEditUnidade] = useState('')
   const [editLinkFormulario, setEditLinkFormulario] = useState('')
   const [editEndDate, setEditEndDate] = useState('')
 
   // Evaluation Panel State
   const [evaluatingEdital, setEvaluatingEdital] = useState<Edital | null>(null)
+  const [sidebarTab, setSidebarTab] = useState<'create' | 'evaluations'>('create')
   const [evaluationInputs, setEvaluationInputs] = useState<Record<string, { status: 'Aprovado' | 'Reprovado' | ''; nota: string }>>({})
   const [evaluationStatusText, setEvaluationStatusText] = useState<Record<string, string>>({})
 
@@ -270,6 +274,7 @@ export default function EditaisPage() {
           action: 'create',
           title,
           description,
+          requirements,
           unidade,
           linkFormulario,
           endDate,
@@ -281,6 +286,7 @@ export default function EditaisPage() {
 
       setTitle('')
       setDescription('')
+      setRequirements('')
       setUnidade(availableUnits.length === 1 ? availableUnits[0] : '')
       setLinkFormulario('')
       setEndDate('')
@@ -316,6 +322,7 @@ export default function EditaisPage() {
           id: editingEdital.id,
           title: editTitle,
           description: editDescription,
+          requirements: editRequirements,
           unidade: editUnidade,
           linkFormulario: editLinkFormulario,
           endDate: editEndDate,
@@ -343,6 +350,7 @@ export default function EditaisPage() {
     setEditingEdital(edital)
     setEditTitle(edital.title)
     setEditDescription(edital.description)
+    setEditRequirements(edital.requirements || '')
     setEditUnidade(edital.unidade)
     setEditLinkFormulario(edital.linkFormulario)
     setEditEndDate(edital.endDate)
@@ -520,6 +528,7 @@ export default function EditaisPage() {
   const triggerEvaluationForEdital = (edital: Edital) => {
     setEditingEdital(null) // Close editor if open
     setEvaluatingEdital(edital)
+    setSidebarTab('evaluations')
     if (sidebarFormRef.current) {
       sidebarFormRef.current.scrollIntoView({ behavior: 'smooth' })
     }
@@ -701,21 +710,37 @@ export default function EditaisPage() {
 
                           {/* Description details */}
                           <div className="text-xs text-muted-foreground leading-relaxed">
-                            <p className={isExpanded ? '' : 'line-clamp-2'}>
-                              {edital.description}
-                            </p>
-                            {edital.description.length > 120 && (
-                              <button
-                                onClick={() => toggleExpanded(edital.id)}
-                                className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-foreground hover:underline cursor-pointer"
-                              >
-                                {isExpanded ? (
-                                  <>Ocultar <ChevronUp className="h-3 w-3" /></>
-                                ) : (
-                                  <>Ler mais <ChevronDown className="h-3 w-3" /></>
-                                )}
-                              </button>
+                            {isExpanded ? (
+                              <div className="space-y-3 mt-1 bg-secondary/15 p-4 rounded-lg border border-border/30">
+                                <div>
+                                  <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider block mb-1">Descrição:</span>
+                                  <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                    {edital.description}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider block mb-1">Requisitos:</span>
+                                  <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                    {edital.requirements || 'Nenhum requisito informado.'}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="line-clamp-2">
+                                {edital.description}
+                              </p>
                             )}
+                            
+                            <button
+                              onClick={() => toggleExpanded(edital.id)}
+                              className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-foreground hover:underline cursor-pointer"
+                            >
+                              {isExpanded ? (
+                                <>Ocultar <ChevronUp className="h-3 w-3" /></>
+                              ) : (
+                                <>Ler mais & detalhes <ChevronDown className="h-3 w-3" /></>
+                              )}
+                            </button>
                           </div>
 
                           {/* Time & Candidates metrics */}
@@ -780,16 +805,18 @@ export default function EditaisPage() {
                               </button>
                             )}
 
-                            {/* Responder Formulário button */}
-                            <a
-                              href={edital.linkFormulario}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full sm:w-auto rounded-lg bg-secondary border border-border/80 px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-secondary/85 hover:border-border transition-all flex items-center justify-center gap-1.5 cursor-pointer ml-auto"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                              Responder Formulário
-                            </a>
+                            {/* Responder Formulário button (Only visible if subscribed - Sequential flow!) */}
+                            {isSubscribed && (
+                              <a
+                                href={edital.linkFormulario}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full sm:w-auto rounded-lg bg-secondary border border-border/80 px-3.5 py-2 text-xs font-semibold text-foreground hover:bg-secondary/85 hover:border-border transition-all flex items-center justify-center gap-1.5 cursor-pointer ml-auto"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                Responder Formulário
+                              </a>
+                            )}
                           </div>
 
                         </div>
@@ -855,21 +882,37 @@ export default function EditaisPage() {
 
                           {/* Description details */}
                           <div className="text-xs text-muted-foreground/85 leading-relaxed">
-                            <p className={isExpanded ? '' : 'line-clamp-2'}>
-                              {edital.description}
-                            </p>
-                            {edital.description.length > 120 && (
-                              <button
-                                onClick={() => toggleExpanded(edital.id)}
-                                className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-foreground/80 hover:underline cursor-pointer"
-                              >
-                                {isExpanded ? (
-                                  <>Ocultar <ChevronUp className="h-3 w-3" /></>
-                                ) : (
-                                  <>Ler mais <ChevronDown className="h-3 w-3" /></>
-                                )}
-                              </button>
+                            {isExpanded ? (
+                              <div className="space-y-3 mt-1 bg-secondary/15 p-4 rounded-lg border border-border/30">
+                                <div>
+                                  <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider block mb-1">Descrição:</span>
+                                  <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                    {edital.description}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] font-bold text-foreground/70 uppercase tracking-wider block mb-1">Requisitos:</span>
+                                  <div className="whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                    {edital.requirements || 'Nenhum requisito informado.'}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="line-clamp-2">
+                                {edital.description}
+                              </p>
                             )}
+                            
+                            <button
+                              onClick={() => toggleExpanded(edital.id)}
+                              className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-foreground/80 hover:underline cursor-pointer"
+                            >
+                              {isExpanded ? (
+                                <>Ocultar <ChevronUp className="h-3 w-3" /></>
+                              ) : (
+                                <>Ler mais & detalhes <ChevronDown className="h-3 w-3" /></>
+                              )}
+                            </button>
                           </div>
 
                           {/* Meta times */}
@@ -961,8 +1004,43 @@ export default function EditaisPage() {
         {isAuthorizedToPublish && (
           <div ref={sidebarFormRef} className="space-y-6 lg:sticky lg:top-24 h-fit">
             
+            {/* TABS SELECTOR */}
+            {!editingEdital && (
+              <div className="flex rounded-lg bg-secondary/40 p-1 border border-border/40 text-xs">
+                <button
+                  onClick={() => {
+                    setSidebarTab('create')
+                    setEvaluatingEdital(null)
+                  }}
+                  className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer text-center ${
+                    sidebarTab === 'create' && !evaluatingEdital
+                      ? 'bg-background text-foreground shadow-sm font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Geral / Criar
+                </button>
+                <button
+                  onClick={() => {
+                    setSidebarTab('evaluations')
+                    if (!evaluatingEdital && editais.length > 0) {
+                      const manageable = editais.find(canManageSpecificEdital)
+                      if (manageable) setEvaluatingEdital(manageable)
+                    }
+                  }}
+                  className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer text-center ${
+                    sidebarTab === 'evaluations' || evaluatingEdital
+                      ? 'bg-background text-foreground shadow-sm font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Controle & Avaliação APM
+                </button>
+              </div>
+            )}
+
             {/* PANEL: PUBLISH NEW EDITAL */}
-            {!editingEdital && !evaluatingEdital && (
+            {!editingEdital && sidebarTab === 'create' && !evaluatingEdital && (
               <div className="rounded-xl border border-border/80 bg-card/40 p-5 space-y-5 backdrop-blur-sm shadow-sm">
                 <div>
                   <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -991,14 +1069,28 @@ export default function EditaisPage() {
 
                   <div>
                     <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Descrição / O que é o Processo *
+                      Descrição (o que vai ser / conteúdo do edital) *
                     </label>
                     <textarea
                       required
-                      rows={4}
-                      placeholder="Detalhes sobre o processo seletivo, requisitos, etapas e fardamento necessário..."
+                      rows={3}
+                      placeholder="Detalhes completos sobre o processo seletivo, as etapas, conteúdo, etc."
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
+                      className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Requisitos (o que é exigido para participar) *
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      placeholder="Ex: Patente mínima, tempo de serviço, fardamento necessário, etc."
+                      value={requirements}
+                      onChange={(e) => setRequirements(e.target.value)}
                       className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground resize-none"
                     />
                   </div>
@@ -1098,13 +1190,26 @@ export default function EditaisPage() {
 
                   <div>
                     <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      Descrição / Processo *
+                      Descrição (o que vai ser / conteúdo do edital) *
                     </label>
                     <textarea
                       required
-                      rows={4}
+                      rows={3}
                       value={editDescription}
                       onChange={(e) => setEditDescription(e.target.value)}
+                      className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Requisitos (o que é exigido para participar) *
+                    </label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={editRequirements}
+                      onChange={(e) => setEditRequirements(e.target.value)}
                       className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground resize-none"
                     />
                   </div>
@@ -1176,105 +1281,128 @@ export default function EditaisPage() {
             )}
 
             {/* PANEL: EVALUATE CANDIDATES */}
-            {evaluatingEdital && (
-              <div className="rounded-xl border border-primary bg-card/50 p-5 space-y-4 backdrop-blur-sm shadow-lg ring-1 ring-primary/20">
+            {!editingEdital && (sidebarTab === 'evaluations' || evaluatingEdital) && (
+              <div className="rounded-xl border border-primary/50 bg-card/40 p-5 space-y-4 backdrop-blur-sm shadow-md ring-1 ring-primary/20">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Award className="h-4 w-4 text-emerald-400" />
-                      Lançar Resultados
+                      Controle & Avaliação APM
                     </h2>
-                    <p className="mt-1 text-[11px] text-muted-foreground truncate max-w-[200px]" title={evaluatingEdital.title}>
-                      Edital: {evaluatingEdital.title}
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Atribua notas (0 a 10) e aprove/reprove inscritos nos processos.
                     </p>
                   </div>
-                  <button
-                    onClick={() => setEvaluatingEdital(null)}
-                    title="Fechar avaliação"
-                    className="text-muted-foreground hover:text-foreground p-1 rounded-lg transition-colors cursor-pointer"
+                </div>
+
+                {/* Dropdown Selector */}
+                <div className="space-y-1.5 pt-1 border-t border-border/20">
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Selecionar Edital
+                  </label>
+                  <select
+                    value={evaluatingEdital?.id || ''}
+                    onChange={(e) => {
+                      const selected = editais.find(ed => ed.id === e.target.value)
+                      setEvaluatingEdital(selected || null)
+                    }}
+                    className="w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground"
                   >
-                    <X className="h-4 w-4" />
-                  </button>
+                    <option value="">Selecione um edital...</option>
+                    {editais.filter(canManageSpecificEdital).map(ed => (
+                      <option key={ed.id} value={ed.id}>
+                        {ed.title} ({ed.subscribers.length} candidato{ed.subscribers.length !== 1 ? 's' : ''})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="text-[11px] text-muted-foreground leading-relaxed bg-secondary/25 border border-border/50 rounded-lg p-3">
-                  Como as respostas ocorrem no link externo, utilize o painel abaixo para atribuir as notas finais e o status de aprovação oficial do site para cada inscrito.
-                </div>
-
-                {evaluatingEdital.subscribers.length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic text-center py-4">
-                    Nenhum candidato inscrito para avaliar neste edital.
-                  </p>
+                {!evaluatingEdital ? (
+                  <div className="rounded-lg bg-secondary/15 p-4 border border-dashed border-border text-center text-xs text-muted-foreground">
+                    Selecione um edital acima ou clique no botão &ldquo;Avaliar Candidatos&rdquo; em um dos cards do mural para iniciar a avaliação.
+                  </div>
                 ) : (
-                  <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1 divide-y divide-border/40">
-                    {evaluatingEdital.subscribers.map((sub, idx) => {
-                      const input = evaluationInputs[sub.userId] || { status: '', nota: '' }
-                      const statusMsg = evaluationStatusText[sub.userId]
+                  <>
+                    <div className="text-[11px] text-muted-foreground leading-relaxed bg-secondary/25 border border-border/50 rounded-lg p-3">
+                      As inscrições ocorrem pelo site e formulário. Utilize o controle abaixo para registrar as notas finais e o resultado de cada candidato.
+                    </div>
 
-                      return (
-                        <div key={sub.userId} className={`pt-4 ${idx === 0 ? 'pt-0 border-t-0' : 'border-t border-border/40'} space-y-3`}>
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-xs text-foreground pr-10 truncate" title={sub.qra || sub.username}>
-                              {sub.qra || sub.username}
-                            </span>
-                            
-                            {statusMsg && (
-                              <span className={`text-[10px] font-semibold ${
-                                statusMsg.includes('Erro') ? 'text-red-400' : 'text-emerald-400 font-bold'
-                              }`}>
-                                {statusMsg}
-                              </span>
-                            )}
-                          </div>
+                    {evaluatingEdital.subscribers.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic text-center py-4">
+                        Nenhum candidato inscrito para avaliar neste edital.
+                      </p>
+                    ) : (
+                      <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1 divide-y divide-border/40">
+                        {evaluatingEdital.subscribers.map((sub, idx) => {
+                          const input = evaluationInputs[sub.userId] || { status: '', nota: '' }
+                          const statusMsg = evaluationStatusText[sub.userId]
 
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[9px] font-bold text-muted-foreground uppercase">Resultado</label>
-                              <select
-                                value={input.status}
-                                onChange={(e) => {
-                                  setEvaluationInputs(prev => ({
-                                    ...prev,
-                                    [sub.userId]: { ...prev[sub.userId], status: e.target.value as any }
-                                  }))
-                                }}
-                                className="mt-1 w-full rounded border border-border/80 bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-foreground"
-                              >
-                                <option value="">Definir...</option>
-                                <option value="Aprovado">Aprovado</option>
-                                <option value="Reprovado">Reprovado</option>
-                              </select>
-                            </div>
+                          return (
+                            <div key={sub.userId} className={`pt-4 ${idx === 0 ? 'pt-0 border-t-0' : 'border-t border-border/40'} space-y-3`}>
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-xs text-foreground pr-10 truncate" title={sub.qra || sub.username}>
+                                  {sub.qra || sub.username}
+                                </span>
+                                
+                                {statusMsg && (
+                                  <span className={`text-[10px] font-semibold ${
+                                    statusMsg.includes('Erro') ? 'text-red-400' : 'text-emerald-400 font-bold'
+                                  }`}>
+                                    {statusMsg}
+                                  </span>
+                                )}
+                              </div>
 
-                            <div>
-                              <label className="block text-[9px] font-bold text-muted-foreground uppercase">Nota Final (0-10)</label>
-                              <div className="flex gap-1.5 mt-1">
-                                <input
-                                  type="text"
-                                  placeholder="Ex: 8.5"
-                                  value={input.nota}
-                                  onChange={(e) => {
-                                    setEvaluationInputs(prev => ({
-                                      ...prev,
-                                      [sub.userId]: { ...prev[sub.userId], nota: e.target.value }
-                                    }))
-                                  }}
-                                  className="w-full rounded border border-border/80 bg-background/50 px-2 py-1.5 text-xs font-mono outline-none focus:border-foreground"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleSaveEvaluation(evaluatingEdital.id, sub.userId)}
-                                  className="rounded bg-primary text-primary-foreground hover:bg-primary/95 text-xs px-2 font-bold cursor-pointer transition-all"
-                                >
-                                  Salvar
-                                </button>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-[9px] font-bold text-muted-foreground uppercase">Resultado</label>
+                                  <select
+                                    value={input.status}
+                                    onChange={(e) => {
+                                      setEvaluationInputs(prev => ({
+                                        ...prev,
+                                        [sub.userId]: { ...prev[sub.userId], status: e.target.value as any }
+                                      }))
+                                    }}
+                                    className="mt-1 w-full rounded border border-border/80 bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-foreground"
+                                  >
+                                    <option value="">Definir...</option>
+                                    <option value="Aprovado">Aprovado</option>
+                                    <option value="Reprovado">Reprovado</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-[9px] font-bold text-muted-foreground uppercase">Nota Final (0-10)</label>
+                                  <div className="flex gap-1.5 mt-1">
+                                    <input
+                                      type="text"
+                                      placeholder="Ex: 8.5"
+                                      value={input.nota}
+                                      onChange={(e) => {
+                                        setEvaluationInputs(prev => ({
+                                          ...prev,
+                                          [sub.userId]: { ...prev[sub.userId], nota: e.target.value }
+                                        }))
+                                      }}
+                                      className="w-full rounded border border-border/80 bg-background/50 px-2 py-1.5 text-xs font-mono outline-none focus:border-foreground"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSaveEvaluation(evaluatingEdital.id, sub.userId)}
+                                      className="rounded bg-primary text-primary-foreground hover:bg-primary/95 text-xs px-2 font-bold cursor-pointer transition-all"
+                                    >
+                                      Salvar
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
