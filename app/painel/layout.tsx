@@ -37,7 +37,7 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
   if (!user || !profile || profile.status !== 'aprovado') return null
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-transparent text-foreground">
       <SiteBackground />
       <PainelSidebar />
       <div className="relative flex min-h-screen flex-col pl-[70px]">
