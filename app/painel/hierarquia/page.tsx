@@ -133,7 +133,7 @@ interface UserProfile {
 }
 
 export default function HierarquiaPage() {
-  const { profile: myProfile } = useAuth()
+  const { profile: myProfile, session } = useAuth()
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -172,20 +172,27 @@ export default function HierarquiaPage() {
   }
 
   const fetchUsers = useCallback(async () => {
+    if (!session?.access_token) return
     setLoading(true)
     try {
-      const res = await fetch('/api/admin/usuarios')
+      const res = await fetch('/api/admin/usuarios', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
       const json = await res.json()
       setUsers(json.usuarios ?? [])
     } catch {
       setUsers([])
     }
     setLoading(false)
-  }, [])
+  }, [session?.access_token])
 
   useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers])
+    if (session?.access_token) {
+      fetchUsers()
+    }
+  }, [fetchUsers, session?.access_token])
 
   // Fecha o dropdown ao scrollar ou redimensionar para evitar desalinhamento
   useEffect(() => {
@@ -201,15 +208,31 @@ export default function HierarquiaPage() {
     }
   }, [])
 
+  // Se o perfil do usuário conectado (myProfile) mudar (por exemplo, revogado ou atualizado em tempo real),
+  // qualquer ação de edição em andamento (dropdown aberto, etc.) deve ser descartada imediatamente.
+  useEffect(() => {
+    setActiveDropdown(null)
+    setDropdownCoords(null)
+  }, [myProfile])
+
   // Salva alteração de campo no servidor
   const saveUserField = async (userId: string, fields: Partial<UserProfile>) => {
     setSavingId(userId)
     try {
-      await fetch('/api/admin/usuarios', {
+      const res = await fetch('/api/admin/usuarios', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
         body: JSON.stringify({ id: userId, ...fields }),
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        console.error('Erro na validação do servidor:', json.error || 'Não autorizado')
+        // Caso a requisição falhe, podemos recarregar os dados para manter o frontend consistente
+        fetchUsers()
+      }
     } catch (e) {
       console.error('Erro ao salvar alteração:', e)
     }

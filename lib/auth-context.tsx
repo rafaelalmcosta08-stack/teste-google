@@ -83,6 +83,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Conexão em tempo real via Server-Sent Events (SSE) para sincronização e revogação instantânea
+  useEffect(() => {
+    if (!user) return
+
+    const eventSource = new EventSource(`/api/events?userId=${encodeURIComponent(user.id)}`)
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.event === 'access-revoked') {
+          console.warn('Acesso ao painel revogado pelo administrador.')
+          logout()
+          window.location.href = '/login'
+        } else if (data.event === 'permissions-updated') {
+          console.log('Permissões atualizadas em tempo real:', data.payload)
+          setProfile((prev) => {
+            if (!prev) return null
+            return {
+              ...prev,
+              ...data.payload,
+            }
+          })
+        }
+      } catch (err) {
+        console.error('Erro ao processar evento SSE de tempo real:', err)
+      }
+    }
+
+    eventSource.onerror = (err) => {
+      console.error('Erro de conexão no SSE de tempo real:', err)
+    }
+
+    return () => {
+      eventSource.close()
+    }
+  }, [user])
+
   async function login(username: string, password: string): Promise<{ error: string | null }> {
     if (!supabase) return { error: 'Supabase não configurado.' }
 

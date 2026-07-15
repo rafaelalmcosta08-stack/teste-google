@@ -22,47 +22,66 @@ const statusLabel: Record<Profile['status'], { label: string; class: string }> =
 }
 
 export default function AdministracaoPage() {
-  const { profile: myProfile } = useAuth()
+  const { profile: myProfile, session } = useAuth()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
   const [atualizando, setAtualizando] = useState<string | null>(null)
 
   const fetchProfiles = useCallback(async () => {
+    if (!session?.access_token) return
     setLoading(true)
     try {
-      const res = await fetch('/api/admin/usuarios')
+      const res = await fetch('/api/admin/usuarios', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
       const json = await res.json()
       setProfiles(json.usuarios ?? [])
     } catch {
       setProfiles([])
     }
     setLoading(false)
-  }, [])
+  }, [session?.access_token])
 
   useEffect(() => {
-    if (myProfile?.role === 'admin') fetchProfiles()
-    else setLoading(false)
-  }, [myProfile, fetchProfiles])
+    if (myProfile?.role === 'admin' && session?.access_token) fetchProfiles()
+    else if (myProfile?.role !== 'admin') setLoading(false)
+  }, [myProfile, session?.access_token, fetchProfiles])
 
   async function atualizarStatus(id: string, novoStatus: 'aprovado' | 'rejeitado') {
     setAtualizando(id)
-    await fetch('/api/admin/usuarios', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status: novoStatus }),
-    })
-    setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, status: novoStatus } : p)))
+    try {
+      await fetch('/api/admin/usuarios', {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({ id, status: novoStatus }),
+      })
+      setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, status: novoStatus } : p)))
+    } catch (e) {
+      console.error('Erro ao atualizar status:', e)
+    }
     setAtualizando(null)
   }
 
   async function alterarRole(id: string, novoRole: 'user' | 'admin') {
     setAtualizando(id)
-    await fetch('/api/admin/usuarios', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, role: novoRole }),
-    })
-    setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, role: novoRole } : p)))
+    try {
+      await fetch('/api/admin/usuarios', {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({ id, role: novoRole }),
+      })
+      setProfiles((prev) => prev.map((p) => (p.id === id ? { ...p, role: novoRole } : p)))
+    } catch (e) {
+      console.error('Erro ao alterar função:', e)
+    }
     setAtualizando(null)
   }
 
