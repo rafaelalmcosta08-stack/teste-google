@@ -16,9 +16,9 @@ export default function HomePage() {
 
 
           <h1 className="max-w-4xl text-5xl font-bold leading-[1.05] tracking-tight text-balance sm:text-7xl">
-            <span className="text-muted-foreground/90">Departamento de Polícia</span>
+            <span className="text-white">Departamento de Polícia</span>
             <br />
-            <span className="text-foreground">Legacy</span>
+            <span className="text-white">Legacy</span>
           </h1>
 
           <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
@@ -29,16 +29,18 @@ export default function HomePage() {
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
             <Link
               href="/manual"
-              className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/10"
             >
               <Sparkles className="h-4 w-4" />
               Manual de Estudo TAFF
             </Link>
             <Link
               href="/recrutador"
-              className="rounded-lg bg-secondary px-5 py-2.5 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary/80"
+              className="liquid-glass-btn rounded-lg"
             >
-              Seja um Recrutador
+              <div className="liquid-glass-inner rounded-lg px-5 py-2.5 text-sm font-semibold text-white">
+                Seja um Recrutador
+              </div>
             </Link>
           </div>
 

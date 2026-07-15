@@ -44,14 +44,48 @@ function Button({
   className,
   variant = 'default',
   size = 'default',
+  children,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  const isLiquidGlass = variant === 'default' || variant === 'secondary' || variant === 'outline' || variant === 'destructive';
+
+  if (isLiquidGlass) {
+    const sizeClasses = {
+      default: 'h-10 text-sm',
+      xs: 'h-6 text-[0.8rem]',
+      sm: 'h-8 text-xs',
+      lg: 'h-12 text-sm',
+      icon: 'size-10',
+      'icon-xs': 'size-6',
+      'icon-sm': 'size-8',
+      'icon-lg': 'size-12',
+    }[size as string] || 'h-10 text-sm';
+
+    return (
+      <ButtonPrimitive
+        data-slot="button"
+        className={cn(
+          "liquid-glass-btn rounded-lg inline-flex items-center justify-center p-[1.5px] outline-none transition-all disabled:pointer-events-none disabled:opacity-50",
+          sizeClasses,
+          className
+        )}
+        {...props}
+      >
+        <div className="liquid-glass-inner rounded-lg w-full h-full flex items-center justify-center gap-1.5 px-4 text-white">
+          {children}
+        </div>
+      </ButtonPrimitive>
+    )
+  }
+
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {children}
+    </ButtonPrimitive>
   )
 }
 
