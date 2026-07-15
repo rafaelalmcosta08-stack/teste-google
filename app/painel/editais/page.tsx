@@ -171,6 +171,31 @@ export default function EditaisPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // Focus and auto-expand from query parameter focusId
+  useEffect(() => {
+    if (typeof window !== 'undefined' && editais.length > 0) {
+      const params = new URLSearchParams(window.location.search)
+      const focusId = params.get('focus')
+      if (focusId) {
+        setExpandedIds(prev => {
+          const next = new Set(prev)
+          next.add(focusId)
+          return next
+        })
+        setTimeout(() => {
+          const el = document.getElementById(`edital-card-${focusId}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            el.classList.add('ring-2', 'ring-primary')
+            setTimeout(() => {
+              el.classList.remove('ring-2', 'ring-primary')
+            }, 3000)
+          }
+        }, 400)
+      }
+    }
+  }, [editais])
+
   // Fetch Editais
   const fetchEditais = async () => {
     try {
@@ -632,6 +657,7 @@ export default function EditaisPage() {
                       return (
                         <div
                           key={edital.id}
+                          id={`edital-card-${edital.id}`}
                           className={`rounded-xl border bg-card/40 p-5 space-y-4 backdrop-blur-sm transition-all hover:border-border/100 hover:shadow-md relative ${
                             isSubscribed ? 'border-emerald-500/30 ring-1 ring-emerald-500/10' : 'border-border/60'
                           }`}

@@ -14,6 +14,7 @@ import {
   BookOpen,
   Shield,
   LogOut,
+  Megaphone,
 } from 'lucide-react'
 
 const menuItems = [
@@ -32,6 +33,13 @@ export function PainelSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { logout, profile } = useAuth()
+
+  const isAltoComando = profile?.cargo?.includes('Alto Comando') || profile?.role === 'admin'
+
+  const activeMenuItems = [...menuItems]
+  if (isAltoComando) {
+    activeMenuItems.push({ label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone })
+  }
 
   async function handleLogout() {
     await logout()
@@ -68,7 +76,7 @@ export function PainelSidebar() {
 
         {/* Menu Items */}
         <nav className="flex flex-col gap-1.5 px-3">
-          {menuItems.map((item) => {
+          {activeMenuItems.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
 

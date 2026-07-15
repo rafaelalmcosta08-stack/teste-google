@@ -155,6 +155,31 @@ export default function CursosPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // Focus and auto-expand from query parameter focusId
+  useEffect(() => {
+    if (typeof window !== 'undefined' && courses.length > 0) {
+      const params = new URLSearchParams(window.location.search)
+      const focusId = params.get('focus')
+      if (focusId) {
+        setExpandedIds(prev => {
+          const next = new Set(prev)
+          next.add(focusId)
+          return next
+        })
+        setTimeout(() => {
+          const el = document.getElementById(`course-card-${focusId}`)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            el.classList.add('ring-2', 'ring-primary')
+            setTimeout(() => {
+              el.classList.remove('ring-2', 'ring-primary')
+            }, 3000)
+          }
+        }, 400)
+      }
+    }
+  }, [courses])
+
   // Fetch Courses
   const fetchCourses = async () => {
     try {
@@ -933,6 +958,7 @@ export default function CursosPage() {
                         <motion.div
                           layout
                           key={course.id}
+                          id={`course-card-${course.id}`}
                           className={`group rounded-xl border p-6 transition-all duration-300 backdrop-blur-sm shadow-sm ${
                             isSubscribed
                               ? 'border-emerald-500/30 bg-emerald-500/[0.02]'
