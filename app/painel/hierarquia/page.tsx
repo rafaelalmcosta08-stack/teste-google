@@ -285,10 +285,232 @@ export default function HierarquiaPage() {
   )
 
   // Caso o usuário conectado seja comum, ele só visualiza o próprio perfil (ou todos de forma read-only)
-  const isAdmin = myProfile?.role === 'admin'
+  const isSiteAdmin = myProfile?.role === 'admin'
   const myDetailedProfile = users.find((u) => u.id === myProfile?.id)
 
-  if (!isAdmin) {
+  const myCargos = myDetailedProfile?.cargo ?? []
+  const myPatente = myDetailedProfile?.patente ?? null
+
+  const OFICIAIS_LIST = [
+    'Coronel',
+    'Tenente-Coronel',
+    'Major',
+    'Capitão',
+    '1º Tenente',
+    '2º Tenente',
+    'Aluno Oficial',
+  ]
+  const isOficial = (pat: string | null) => {
+    if (!pat) return false
+    return OFICIAIS_LIST.includes(pat)
+  }
+
+  const canViewFullHierarchy = isSiteAdmin || isOficial(myPatente)
+
+  // 1. Patente Helper
+  const getPatenteOptions = (promoterPatente: string | null) => {
+    if (!promoterPatente) return []
+    const allowedPromoters = ['Coronel', 'Tenente-Coronel', 'Major', 'Capitão']
+    if (!allowedPromoters.includes(promoterPatente)) return []
+    
+    const myIndex = PATENTES.indexOf(promoterPatente)
+    if (myIndex === -1) return []
+    
+    return PATENTES.slice(myIndex + 1)
+  }
+
+  const getPatenteOptionsForUser = (promoterPatente: string | null, targetUserId: string, currentUserId: string, siteAdmin: boolean) => {
+    if (siteAdmin) return PATENTES
+    if (targetUserId === currentUserId) return []
+    return getPatenteOptions(promoterPatente)
+  }
+
+  const canEditPatente = (targetUser: UserProfile) => {
+    if (isSiteAdmin) return true
+    if (targetUser.id === myProfile?.id) return false
+    const allowed = getPatenteOptions(myPatente)
+    return allowed.length > 0
+  }
+
+  // 2. Cargo Helper
+  const CARGO_PERMISSIONS: Record<string, string[]> = {
+    'Alto Comando': CARGOS,
+    'Diretor Corregedoria': ['Membro Corregedoria'],
+    'Diretor APM': [
+      'Instrutor Treinamento Operacional',
+      'Instrutor De Cursos e Recrutamentos',
+      'Coordenador Do Comitê Promocional',
+      'Membro Do Comitê Promocional',
+    ],
+    'Supervisor APM': [
+      'Instrutor Treinamento Operacional',
+      'Instrutor De Cursos e Recrutamentos',
+      'Coordenador Do Comitê Promocional',
+      'Membro Do Comitê Promocional',
+    ],
+    'Comando Militar': ['Rádio Patrulha'],
+    'Comando Bope': ['Coordenador Bope', 'Executor Bope', 'Operador Bope', 'Probatório Bope'],
+    'Comando Core': ['Coordenador Core', 'Executor Core', 'Operador Core', 'Probatório Core'],
+    'Comando GAEP': ['Coordenador GAEP', 'Membro GAEP'],
+    'Comando GAR': ['Coordenador GAR', 'Membro GAR'],
+    'Comando GTM': ['Coordenador GTM', 'Membro GTM'],
+  }
+
+  const getMyHighestCargoIndex = (cargosList: string[] | undefined) => {
+    if (!cargosList || cargosList.length === 0) return CARGOS.length - 1
+    let minIndex = CARGOS.length - 1
+    for (const c of cargosList) {
+      const idx = CARGOS.indexOf(c)
+      if (idx !== -1 && idx < minIndex) {
+        minIndex = idx
+      }
+    }
+    return minIndex
+  }
+
+  const getAllowedCargos = (promoterCargos: string[] | undefined, targetUserId: string, currentUserId: string, siteAdmin: boolean) => {
+    if (siteAdmin) return CARGOS
+    if (targetUserId === currentUserId) return []
+    if (!promoterCargos || promoterCargos.length === 0) return []
+
+    const allowedSet = new Set<string>()
+    const hasAltoComando = promoterCargos.includes('Alto Comando')
+
+    for (const cargo of promoterCargos) {
+      const allowedForThisCargo = CARGO_PERMISSIONS[cargo]
+      if (allowedForThisCargo) {
+        allowedForThisCargo.forEach((c) => allowedSet.add(c))
+      }
+    }
+
+    if (allowedSet.size === 0) return []
+
+    const myHighestCargoIndex = getMyHighestCargoIndex(promoterCargos)
+    const allowedList = Array.from(allowedSet).filter((c) => {
+      if (c === 'Sem Efetividade') {
+        return hasAltoComando
+      }
+      const targetCargoIndex = CARGOS.indexOf(c)
+      if (targetCargoIndex === -1) return false
+      return targetCargoIndex >= myHighestCargoIndex
+    })
+
+    if (hasAltoComando) {
+      return CARGOS
+    }
+
+    return allowedList
+  }
+
+  const canEditCargos = (targetUser: UserProfile) => {
+    if (isSiteAdmin) return true
+    if (targetUser.id === myProfile?.id) return false
+    const allowed = getAllowedCargos(myCargos, targetUser.id, myProfile?.id || '', false)
+    return allowed.length > 0
+  }
+
+  // 3. Unidade Administrativa Helper
+  const getAllowedUnidadesAdministrativas = (promoterCargos: string[] | undefined, siteAdmin: boolean) => {
+    if (siteAdmin) return UNIDADES_ADMINISTRATIVAS
+    if (!promoterCargos || promoterCargos.length === 0) return []
+
+    const allowed = new Set<string>()
+    if (promoterCargos.includes('Alto Comando')) {
+      return UNIDADES_ADMINISTRATIVAS
+    }
+    if (promoterCargos.includes('Diretor Corregedoria')) {
+      allowed.add('Corregedoria')
+    }
+    if (promoterCargos.includes('Diretor APM') || promoterCargos.includes('Supervisor APM')) {
+      allowed.add('APM')
+    }
+    return Array.from(allowed)
+  }
+
+  const canEditUnidadeAdministrativa = (targetUser: UserProfile) => {
+    if (isSiteAdmin) return true
+    const allowed = getAllowedUnidadesAdministrativas(myCargos, false)
+    return allowed.length > 0
+  }
+
+  // 4. Unidade Operacional Helper
+  const getAllowedUnidadesOperacionais = (promoterCargos: string[] | undefined, siteAdmin: boolean) => {
+    if (siteAdmin) return UNIDADES_OPERACIONAIS
+    if (!promoterCargos || promoterCargos.length === 0) return []
+
+    const allowed = new Set<string>()
+    if (promoterCargos.includes('Alto Comando')) {
+      return UNIDADES_OPERACIONAIS
+    }
+    if (promoterCargos.includes('Comando Bope')) {
+      allowed.add('BOPE')
+    }
+    if (promoterCargos.includes('Comando Core')) {
+      allowed.add('CORE')
+    }
+    if (promoterCargos.includes('Comando GAEP')) {
+      allowed.add('GAEP')
+    }
+    if (promoterCargos.includes('Comando GAR')) {
+      allowed.add('GAR')
+    }
+    if (promoterCargos.includes('Comando GTM')) {
+      allowed.add('GTM')
+    }
+    return Array.from(allowed)
+  }
+
+  const canEditUnidadeOperacional = (targetUser: UserProfile) => {
+    if (isSiteAdmin) return true
+    const allowed = getAllowedUnidadesOperacionais(myCargos, false)
+    return allowed.length > 0
+  }
+
+  // 5. Status Helper
+  const getAllowedStatusAtividade = (siteAdmin: boolean) => {
+    if (siteAdmin) return STATUS_ATIVIDADE
+    return []
+  }
+
+  const canEditStatusAtividade = (targetUser: UserProfile) => {
+    return isSiteAdmin
+  }
+
+  // 6. Cursos Helper
+  const getAllowedCursos = (promoterCargos: string[] | undefined, siteAdmin: boolean) => {
+    if (siteAdmin) return CURSOS
+    if (!promoterCargos || promoterCargos.length === 0) return []
+
+    if (promoterCargos.includes('Diretor APM') || promoterCargos.includes('Supervisor APM') || promoterCargos.includes('Alto Comando')) {
+      return CURSOS
+    }
+    return []
+  }
+
+  const canEditCursos = (targetUser: UserProfile) => {
+    if (isSiteAdmin) return true
+    const allowed = getAllowedCursos(myCargos, false)
+    return allowed.length > 0
+  }
+
+  // 7. Advertências Helper
+  const getAllowedAdvertencias = (promoterCargos: string[] | undefined, siteAdmin: boolean) => {
+    if (siteAdmin) return ADVERTENCIAS
+    if (!promoterCargos || promoterCargos.length === 0) return []
+
+    if (promoterCargos.includes('Diretor Corregedoria') || promoterCargos.includes('Alto Comando')) {
+      return ADVERTENCIAS
+    }
+    return []
+  }
+
+  const canEditAdvertencia = (targetUser: UserProfile) => {
+    if (isSiteAdmin) return true
+    const allowed = getAllowedAdvertencias(myCargos, false)
+    return allowed.length > 0
+  }
+
+  if (!canViewFullHierarchy) {
     return (
       <main className="mx-auto max-w-[1600px] px-6 pb-24 pt-16 sm:px-10 lg:px-16">
         {/* Cabeçalho */}
@@ -498,119 +720,205 @@ export default function HierarquiaPage() {
 
                       {/* Patente */}
                       <td className="px-4 py-4">
-                        <button
-                          onClick={(e) => toggleOpen(u.id, 'patente', e)}
-                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:opacity-85 cursor-pointer transition-opacity ${getPatenteColorClass(
-                            u.patente
-                          )}`}
-                        >
-                          <span>{u.patente ?? 'Recruta'}</span>
-                          <ChevronDown className="h-3 w-3 opacity-60" />
-                        </button>
+                        {canEditPatente(u) ? (
+                          <button
+                            onClick={(e) => toggleOpen(u.id, 'patente', e)}
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:opacity-85 cursor-pointer transition-opacity ${getPatenteColorClass(
+                              u.patente
+                            )}`}
+                          >
+                            <span>{u.patente ?? 'Recruta'}</span>
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </button>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getPatenteColorClass(
+                              u.patente
+                            )}`}
+                          >
+                            {u.patente ?? 'Recruta'}
+                          </span>
+                        )}
                       </td>
 
                       {/* Cargos */}
                       <td className="px-4 py-4 min-w-[200px]">
-                        <div
-                          onClick={(e) => toggleOpen(u.id, 'cargo', e)}
-                          className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
-                        >
-                          {u.cargo && u.cargo.length > 0 && u.cargo[0] !== 'Sem Efetividade' ? (
-                            u.cargo.map((c) => (
-                              <span
-                                key={c}
-                                className="rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-semibold text-foreground border border-border/40"
-                              >
-                                {c}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-muted-foreground p-0.5">Sem Efetividade</span>
-                          )}
-                          <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
-                        </div>
+                        {canEditCargos(u) ? (
+                          <div
+                            onClick={(e) => toggleOpen(u.id, 'cargo', e)}
+                            className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
+                          >
+                            {u.cargo && u.cargo.length > 0 && u.cargo[0] !== 'Sem Efetividade' ? (
+                              u.cargo.map((c) => (
+                                <span
+                                  key={c}
+                                  className="rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-semibold text-foreground border border-border/40"
+                                >
+                                  {c}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground p-0.5">Sem Efetividade</span>
+                            )}
+                            <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/20 bg-secondary/5 min-h-[36px]">
+                            {u.cargo && u.cargo.length > 0 && u.cargo[0] !== 'Sem Efetividade' ? (
+                              u.cargo.map((c) => (
+                                <span
+                                  key={c}
+                                  className="rounded-full bg-secondary/50 px-2 py-0.5 text-[10px] font-semibold text-foreground border border-border/30"
+                                >
+                                  {c}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground p-0.5">Sem Efetividade</span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* Unid Admin */}
                       <td className="px-4 py-4">
-                        <button
-                          onClick={(e) => toggleOpen(u.id, 'unidade_administrativa', e)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-1 text-xs font-medium hover:bg-secondary/50 text-foreground"
-                        >
-                          <span>{u.unidade_administrativa || 'Sem Efetividade'}</span>
-                          <ChevronDown className="h-3 w-3 opacity-60" />
-                        </button>
+                        {canEditUnidadeAdministrativa(u) ? (
+                          <button
+                            onClick={(e) => toggleOpen(u.id, 'unidade_administrativa', e)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-1 text-xs font-medium hover:bg-secondary/50 text-foreground cursor-pointer"
+                          >
+                            <span>{u.unidade_administrativa || 'Sem Efetividade'}</span>
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 bg-secondary/10 px-2.5 py-1 text-xs font-medium text-foreground">
+                            {u.unidade_administrativa || 'Sem Efetividade'}
+                          </span>
+                        )}
                       </td>
 
                       {/* Unid Operacional */}
                       <td className="px-4 py-4">
-                        <button
-                          onClick={(e) => toggleOpen(u.id, 'unidade_operacional', e)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-1 text-xs font-medium hover:bg-secondary/50 text-foreground"
-                        >
-                          <span>{u.unidade_operacional || 'Sem Efetividade'}</span>
-                          <ChevronDown className="h-3 w-3 opacity-60" />
-                        </button>
+                        {canEditUnidadeOperacional(u) ? (
+                          <button
+                            onClick={(e) => toggleOpen(u.id, 'unidade_operacional', e)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-1 text-xs font-medium hover:bg-secondary/50 text-foreground cursor-pointer"
+                          >
+                            <span>{u.unidade_operacional || 'Sem Efetividade'}</span>
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/30 bg-secondary/10 px-2.5 py-1 text-xs font-medium text-foreground">
+                            {u.unidade_operacional || 'Sem Efetividade'}
+                          </span>
+                        )}
                       </td>
 
                       {/* Status de Atividade */}
                       <td className="px-4 py-4">
-                        <button
-                          onClick={(e) => toggleOpen(u.id, 'status_atividade', e)}
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:opacity-85 transition-opacity cursor-pointer ${
-                            u.status_atividade === 'Inativo'
-                              ? 'text-zinc-400 bg-zinc-500/10 border-zinc-500/30'
-                              : 'text-green-400 bg-green-400/10 border-green-500/30'
-                          }`}
-                        >
-                          <span className={`h-1.5 w-1.5 rounded-full ${u.status_atividade === 'Inativo' ? 'bg-zinc-500' : 'bg-green-400 animate-pulse'}`} />
-                          <span>{u.status_atividade ?? 'Ativo'}</span>
-                          <ChevronDown className="h-3 w-3 opacity-60" />
-                        </button>
+                        {canEditStatusAtividade(u) ? (
+                          <button
+                            onClick={(e) => toggleOpen(u.id, 'status_atividade', e)}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:opacity-85 transition-opacity cursor-pointer ${
+                              u.status_atividade === 'Inativo'
+                                ? 'text-zinc-400 bg-zinc-500/10 border-zinc-500/30'
+                                : 'text-green-400 bg-green-400/10 border-green-500/30'
+                            }`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full ${u.status_atividade === 'Inativo' ? 'bg-zinc-500' : 'bg-green-400 animate-pulse'}`} />
+                            <span>{u.status_atividade ?? 'Ativo'}</span>
+                            <ChevronDown className="h-3 w-3 opacity-60" />
+                          </button>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                              u.status_atividade === 'Inativo'
+                                ? 'text-zinc-400 bg-zinc-500/10 border-zinc-500/30'
+                                : 'text-green-400 bg-green-400/10 border-green-500/30'
+                            }`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full ${u.status_atividade === 'Inativo' ? 'bg-zinc-500' : 'bg-green-400'}`} />
+                            <span>{u.status_atividade ?? 'Ativo'}</span>
+                          </span>
+                        )}
                       </td>
 
                       {/* Cursos */}
                       <td className="px-4 py-4 min-w-[200px]">
-                        <div
-                          onClick={(e) => toggleOpen(u.id, 'cursos', e)}
-                          className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
-                        >
-                          {u.cursos && u.cursos.length > 0 ? (
-                            u.cursos.map((cur) => (
-                              <span
-                                key={cur}
-                                className="rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-semibold text-foreground border border-border/40"
-                              >
-                                {cur}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-muted-foreground p-0.5">Sem Cursos</span>
-                          )}
-                          <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
-                        </div>
+                        {canEditCursos(u) ? (
+                          <div
+                            onClick={(e) => toggleOpen(u.id, 'cursos', e)}
+                            className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
+                          >
+                            {u.cursos && u.cursos.length > 0 ? (
+                              u.cursos.map((cur) => (
+                                <span
+                                  key={cur}
+                                  className="rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-semibold text-foreground border border-border/40"
+                                >
+                                  {cur}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground p-0.5">Sem Cursos</span>
+                            )}
+                            <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/20 bg-secondary/5 min-h-[36px]">
+                            {u.cursos && u.cursos.length > 0 ? (
+                              u.cursos.map((cur) => (
+                                <span
+                                  key={cur}
+                                  className="rounded-full bg-secondary/50 px-2 py-0.5 text-[10px] font-semibold text-foreground border border-border/30"
+                                >
+                                  {cur}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground p-0.5">Sem Cursos</span>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       {/* Advertências */}
                       <td className="px-4 py-4 min-w-[180px]">
-                        <div
-                          onClick={(e) => toggleOpen(u.id, 'advertencia', e)}
-                          className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
-                        >
-                          {u.advertencia && u.advertencia.length > 0 ? (
-                            u.advertencia.map((adv) => (
-                              <span
-                                key={adv}
-                                className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-400 border border-red-500/20"
-                              >
-                                {adv}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-muted-foreground p-0.5">Ficha Limpa</span>
-                          )}
-                          <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
-                        </div>
+                        {canEditAdvertencia(u) ? (
+                          <div
+                            onClick={(e) => toggleOpen(u.id, 'advertencia', e)}
+                            className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
+                          >
+                            {u.advertencia && u.advertencia.length > 0 ? (
+                              u.advertencia.map((adv) => (
+                                <span
+                                  key={adv}
+                                  className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold text-red-400 border border-red-500/20"
+                                >
+                                  {adv}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground p-0.5">Ficha Limpa</span>
+                            )}
+                            <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/20 bg-secondary/5 min-h-[36px]">
+                            {u.advertencia && u.advertencia.length > 0 ? (
+                              u.advertencia.map((adv) => (
+                                <span
+                                  key={adv}
+                                  className="rounded-full bg-red-500/5 px-2 py-0.5 text-[10px] font-semibold text-red-400/80 border border-red-500/10"
+                                >
+                                  {adv}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground p-0.5">Ficha Limpa</span>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )
@@ -623,171 +931,183 @@ export default function HierarquiaPage() {
 
       {/* Dynamic Floating Dropdown Overlay */}
       {activeDropdown && dropdownCoords && activeUser && (
-        <>
-          {/* Backdrop to dismiss */}
-          <div
-            className="fixed inset-0 z-[9998] bg-transparent cursor-default"
-            onClick={() => {
-              setActiveDropdown(null)
-              setDropdownCoords(null)
-            }}
-          />
+        (() => {
+          const patenteOptions = getPatenteOptionsForUser(myPatente, activeUser.id, myProfile?.id || '', isSiteAdmin)
+          const cargoOptions = getAllowedCargos(myCargos, activeUser.id, myProfile?.id || '', isSiteAdmin)
+          const unidadeAdministrativaOptions = getAllowedUnidadesAdministrativas(myCargos, isSiteAdmin)
+          const unidadeOperacionalOptions = getAllowedUnidadesOperacionais(myCargos, isSiteAdmin)
+          const statusAtividadeOptions = getAllowedStatusAtividade(isSiteAdmin)
+          const cursoOptions = getAllowedCursos(myCargos, isSiteAdmin)
+          const advertenciaOptions = getAllowedAdvertencias(myCargos, isSiteAdmin)
 
-          {/* Floating Dropdown Container */}
-          <div
-            className="fixed z-[9999] rounded-lg border border-border/80 bg-popover p-1 shadow-2xl backdrop-blur-md overflow-y-auto"
-            style={{
-              top: `${dropdownCoords.top}px`,
-              left: `${dropdownCoords.left}px`,
-              width: activeDropdown.field === 'cargo' || activeDropdown.field === 'cursos' ? '256px' : activeDropdown.field === 'advertencia' ? '240px' : '192px',
-              maxHeight: activeDropdown.field === 'cargo' || activeDropdown.field === 'cursos' || activeDropdown.field === 'advertencia' ? '288px' : '240px',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {activeDropdown.field === 'patente' && (
-              <div className="flex flex-col gap-0.5">
-                {PATENTES.map((pat) => (
-                  <button
-                    key={pat}
-                    onClick={() => handleSingleSelect(activeUser.id, 'patente', pat)}
-                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
-                      activeUser.patente === pat ? 'bg-secondary' : ''
-                    }`}
-                  >
-                    <span>{pat}</span>
-                    {activeUser.patente === pat && <Check className="h-3.5 w-3.5 text-primary" />}
-                  </button>
-                ))}
-              </div>
-            )}
+          return (
+            <>
+              {/* Backdrop to dismiss */}
+              <div
+                className="fixed inset-0 z-[9998] bg-transparent cursor-default"
+                onClick={() => {
+                  setActiveDropdown(null)
+                  setDropdownCoords(null)
+                }}
+              />
 
-            {activeDropdown.field === 'cargo' && (
-              <div className="flex flex-col gap-0.5">
-                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
-                  Selecionar Cargos
-                </div>
-                {CARGOS.map((car) => {
-                  const isChecked = activeUser.cargo?.includes(car)
-                  return (
-                    <button
-                      key={car}
-                      onClick={() => handleMultiSelectToggle(activeUser.id, 'cargo', car)}
-                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
-                    >
-                      <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
-                        {isChecked && <Check className="h-3 w-3 text-primary" />}
-                      </div>
-                      <span className="truncate">{car}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+              {/* Floating Dropdown Container */}
+              <div
+                className="fixed z-[9999] rounded-lg border border-border/80 bg-popover p-1 shadow-2xl backdrop-blur-md overflow-y-auto"
+                style={{
+                  top: `${dropdownCoords.top}px`,
+                  left: `${dropdownCoords.left}px`,
+                  width: activeDropdown.field === 'cargo' || activeDropdown.field === 'cursos' ? '256px' : activeDropdown.field === 'advertencia' ? '240px' : '192px',
+                  maxHeight: activeDropdown.field === 'cargo' || activeDropdown.field === 'cursos' || activeDropdown.field === 'advertencia' ? '288px' : '240px',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {activeDropdown.field === 'patente' && (
+                  <div className="flex flex-col gap-0.5">
+                    {patenteOptions.map((pat) => (
+                      <button
+                        key={pat}
+                        onClick={() => handleSingleSelect(activeUser.id, 'patente', pat)}
+                        className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
+                          activeUser.patente === pat ? 'bg-secondary' : ''
+                        }`}
+                      >
+                        <span>{pat}</span>
+                        {activeUser.patente === pat && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-            {activeDropdown.field === 'unidade_administrativa' && (
-              <div className="flex flex-col gap-0.5">
-                {UNIDADES_ADMINISTRATIVAS.map((ua) => (
-                  <button
-                    key={ua}
-                    onClick={() => handleSingleSelect(activeUser.id, 'unidade_administrativa', ua)}
-                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
-                      activeUser.unidade_administrativa === ua ? 'bg-secondary' : ''
-                    }`}
-                  >
-                    <span>{ua}</span>
-                    {activeUser.unidade_administrativa === ua && <Check className="h-3.5 w-3.5 text-primary" />}
-                  </button>
-                ))}
-              </div>
-            )}
+                {activeDropdown.field === 'cargo' && (
+                  <div className="flex flex-col gap-0.5">
+                    <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                      Selecionar Cargos
+                    </div>
+                    {cargoOptions.map((car) => {
+                      const isChecked = activeUser.cargo?.includes(car)
+                      return (
+                        <button
+                          key={car}
+                          onClick={() => handleMultiSelectToggle(activeUser.id, 'cargo', car)}
+                          className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
+                        >
+                          <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
+                            {isChecked && <Check className="h-3 w-3 text-primary" />}
+                          </div>
+                          <span className="truncate">{car}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
 
-            {activeDropdown.field === 'unidade_operacional' && (
-              <div className="flex flex-col gap-0.5">
-                {UNIDADES_OPERACIONAIS.map((uo) => (
-                  <button
-                    key={uo}
-                    onClick={() => handleSingleSelect(activeUser.id, 'unidade_operacional', uo)}
-                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
-                      activeUser.unidade_operacional === uo ? 'bg-secondary' : ''
-                    }`}
-                  >
-                    <span>{uo}</span>
-                    {activeUser.unidade_operacional === uo && <Check className="h-3.5 w-3.5 text-primary" />}
-                  </button>
-                ))}
-              </div>
-            )}
+                {activeDropdown.field === 'unidade_administrativa' && (
+                  <div className="flex flex-col gap-0.5">
+                    {unidadeAdministrativaOptions.map((ua) => (
+                      <button
+                        key={ua}
+                        onClick={() => handleSingleSelect(activeUser.id, 'unidade_administrativa', ua)}
+                        className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
+                          activeUser.unidade_administrativa === ua ? 'bg-secondary' : ''
+                        }`}
+                      >
+                        <span>{ua}</span>
+                        {activeUser.unidade_administrativa === ua && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-            {activeDropdown.field === 'status_atividade' && (
-              <div className="flex flex-col gap-0.5">
-                <div className="px-2 py-1 text-[9px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 leading-tight sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
-                  Alterar Status (Manual)
-                </div>
-                {STATUS_ATIVIDADE.map((sa) => (
-                  <button
-                    key={sa}
-                    onClick={() => handleSingleSelect(activeUser.id, 'status_atividade', sa)}
-                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
-                      activeUser.status_atividade === sa ? 'bg-secondary' : ''
-                    }`}
-                  >
-                    <span>{sa}</span>
-                    {activeUser.status_atividade === sa && <Check className="h-3.5 w-3.5 text-primary" />}
-                  </button>
-                ))}
-                <div className="p-2 border-t border-border/30 mt-1 text-[9px] leading-relaxed text-muted-foreground">
-                  Muda para <span className="font-semibold text-foreground">Inativo</span> se ficar 15 dias sem fazer login.
-                </div>
-              </div>
-            )}
+                {activeDropdown.field === 'unidade_operacional' && (
+                  <div className="flex flex-col gap-0.5">
+                    {unidadeOperacionalOptions.map((uo) => (
+                      <button
+                        key={uo}
+                        onClick={() => handleSingleSelect(activeUser.id, 'unidade_operacional', uo)}
+                        className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
+                          activeUser.unidade_operacional === uo ? 'bg-secondary' : ''
+                        }`}
+                      >
+                        <span>{uo}</span>
+                        {activeUser.unidade_operacional === uo && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-            {activeDropdown.field === 'cursos' && (
-              <div className="flex flex-col gap-0.5">
-                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
-                  Toggelar Cursos
-                </div>
-                {CURSOS.map((cur) => {
-                  const isChecked = activeUser.cursos?.includes(cur)
-                  return (
-                    <button
-                      key={cur}
-                      onClick={() => handleMultiSelectToggle(activeUser.id, 'cursos', cur)}
-                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
-                    >
-                      <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
-                        {isChecked && <Check className="h-3 w-3 text-primary" />}
-                      </div>
-                      <span className="truncate">{cur}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+                {activeDropdown.field === 'status_atividade' && (
+                  <div className="flex flex-col gap-0.5">
+                    <div className="px-2 py-1 text-[9px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 leading-tight sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                      Alterar Status (Manual)
+                    </div>
+                    {statusAtividadeOptions.map((sa) => (
+                      <button
+                        key={sa}
+                        onClick={() => handleSingleSelect(activeUser.id, 'status_atividade', sa)}
+                        className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
+                          activeUser.status_atividade === sa ? 'bg-secondary' : ''
+                        }`}
+                      >
+                        <span>{sa}</span>
+                        {activeUser.status_atividade === sa && <Check className="h-3.5 w-3.5 text-primary" />}
+                      </button>
+                    ))}
+                    <div className="p-2 border-t border-border/30 mt-1 text-[9px] leading-relaxed text-muted-foreground">
+                      Muda para <span className="font-semibold text-foreground">Inativo</span> se ficar 15 dias sem fazer login.
+                    </div>
+                  </div>
+                )}
 
-            {activeDropdown.field === 'advertencia' && (
-              <div className="flex flex-col gap-0.5">
-                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
-                  Toggelar Advertências
-                </div>
-                {ADVERTENCIAS.map((adv) => {
-                  const isChecked = activeUser.advertencia?.includes(adv)
-                  return (
-                    <button
-                      key={adv}
-                      onClick={() => handleMultiSelectToggle(activeUser.id, 'advertencia', adv)}
-                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
-                    >
-                      <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
-                        {isChecked && <Check className="h-3 w-3 text-primary" />}
-                      </div>
-                      <span className="truncate">{adv}</span>
-                    </button>
-                  )
-                })}
+                {activeDropdown.field === 'cursos' && (
+                  <div className="flex flex-col gap-0.5">
+                    <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                      Toggelar Cursos
+                    </div>
+                    {cursoOptions.map((cur) => {
+                      const isChecked = activeUser.cursos?.includes(cur)
+                      return (
+                        <button
+                          key={cur}
+                          onClick={() => handleMultiSelectToggle(activeUser.id, 'cursos', cur)}
+                          className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
+                        >
+                          <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
+                            {isChecked && <Check className="h-3 w-3 text-primary" />}
+                          </div>
+                          <span className="truncate">{cur}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {activeDropdown.field === 'advertencia' && (
+                  <div className="flex flex-col gap-0.5">
+                    <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                      Toggelar Advertências
+                    </div>
+                    {advertenciaOptions.map((adv) => {
+                      const isChecked = activeUser.advertencia?.includes(adv)
+                      return (
+                        <button
+                          key={adv}
+                          onClick={() => handleMultiSelectToggle(activeUser.id, 'advertencia', adv)}
+                          className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
+                        >
+                          <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
+                            {isChecked && <Check className="h-3 w-3 text-primary" />}
+                          </div>
+                          <span className="truncate">{adv}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </>
+            </>
+          )
+        })()
       )}
     </main>
   )

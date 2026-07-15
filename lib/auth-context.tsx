@@ -11,6 +11,12 @@ export interface Profile {
   patente: string | null
   status: 'pendente' | 'aprovado' | 'rejeitado'
   role: 'user' | 'admin'
+  cargo?: string[]
+  unidade_administrativa?: string
+  unidade_operacional?: string
+  status_atividade?: 'Ativo' | 'Inativo'
+  cursos?: string[]
+  advertencia?: string[]
 }
 
 interface AuthContextType {

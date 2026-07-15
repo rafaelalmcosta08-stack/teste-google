@@ -5,13 +5,30 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
+const PATENTES = [
+  'Coronel',
+  'Tenente-Coronel',
+  'Major',
+  'Capitão',
+  '1º Tenente',
+  '2º Tenente',
+  'Aluno Oficial',
+  'Sub Tenente',
+  '1º Sargento',
+  '2º Sargento',
+  '3º Sargento',
+  'Cabo',
+  'Soldado',
+  'Recruta',
+]
+
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
 export function RecruiterForm() {
   const [form, setForm] = useState({
     usuario: '',
     qra: '',
-    patente: '',
+    patente: 'Recruta',
     senha: '',
     confirmarSenha: '',
   })
@@ -107,12 +124,19 @@ export function RecruiterForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="patente">Patente</Label>
-          <Input
+          <select
             id="patente"
             value={form.patente}
-            onChange={update('patente')}
-            placeholder="Ex: Soldado"
-          />
+            onChange={(e) => setForm((prev) => ({ ...prev, patente: e.target.value }))}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-border/60 text-foreground"
+            required
+          >
+            {PATENTES.map((pat) => (
+              <option key={pat} value={pat} className="bg-popover text-foreground">
+                {pat}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
