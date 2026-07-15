@@ -130,6 +130,10 @@ interface UserProfile {
   status_atividade_override_at: string | null
   cursos: string[]
   advertencia: string[]
+  discord_username?: string | null
+  discord_id?: string | null
+  allowed_by?: string | null
+  game_id?: string | null
 }
 
 export default function HierarquiaPage() {
@@ -346,13 +350,31 @@ export default function HierarquiaPage() {
     return 'text-foreground bg-secondary/80 border-border/60'
   }
 
-  // Filtra usuários aprovados
+  // Filtra usuários aprovados e ordena por patente (da maior para a menor)
   const aprovados = users.filter((u) => u.status === 'aprovado')
-  const filteredUsers = aprovados.filter(
-    (u) =>
-      u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (u.qra && u.qra.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
+  const filteredUsers = aprovados
+    .filter(
+      (u) =>
+        u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (u.qra && u.qra.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+    .sort((a, b) => {
+      const indexA = a.patente ? PATENTES.indexOf(a.patente) : -1
+      const indexB = b.patente ? PATENTES.indexOf(b.patente) : -1
+
+      // Menor índice no array PATENTES significa maior cargo/patente (Coronel = 0)
+      const valA = indexA === -1 ? 999 : indexA
+      const valB = indexB === -1 ? 999 : indexB
+
+      if (valA !== valB) {
+        return valA - valB
+      }
+
+      // Desempate por QRA ou username em ordem alfabética
+      const nameA = a.qra || a.username || ''
+      const nameB = b.qra || b.username || ''
+      return nameA.localeCompare(nameB, 'pt-BR')
+    })
 
   // Caso o usuário conectado seja comum, ele só visualiza o próprio perfil (ou todos de forma read-only)
   const isSiteAdmin = myProfile?.role === 'admin'
@@ -775,6 +797,7 @@ export default function HierarquiaPage() {
               <thead className="border-b border-border/60 bg-secondary/30">
                 <tr>
                   <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Usuário / QRA</th>
+                  <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Discord / Autorização</th>
                   <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Patente</th>
                   <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Cargo(s)</th>
                   <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Unid. Admin</th>
@@ -791,8 +814,38 @@ export default function HierarquiaPage() {
                       {/* QRA / Usuário */}
                       <td className="px-4 py-4 font-medium whitespace-nowrap">
                         <div className="flex flex-col">
-                          <span className="font-bold text-foreground">{u.qra || '—'}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-foreground">{u.qra || '—'}</span>
+                            {u.game_id && (
+                              <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-mono font-bold text-indigo-400">
+                                ID: {u.game_id}
+                              </span>
+                            )}
+                          </div>
                           <span className="text-xs text-muted-foreground">({u.username})</span>
+                        </div>
+                      </td>
+
+                      {/* Discord / Autorização */}
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          {u.discord_username ? (
+                            <span className="text-xs font-semibold text-foreground">
+                              @{u.discord_username}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/60 italic">—</span>
+                          )}
+                          {u.discord_id && (
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              ID: {u.discord_id}
+                            </span>
+                          )}
+                          {u.allowed_by && (
+                            <span className="text-[10px] text-indigo-400 font-medium">
+                              Permitido por: {u.allowed_by}
+                            </span>
+                          )}
                         </div>
                       </td>
 

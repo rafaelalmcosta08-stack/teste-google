@@ -17,6 +17,10 @@ export interface Profile {
   status_atividade?: 'Ativo' | 'Inativo'
   cursos?: string[]
   advertencia?: string[]
+  discord_username?: string | null
+  discord_id?: string | null
+  allowed_by?: string | null
+  game_id?: string | null
 }
 
 interface AuthContextType {

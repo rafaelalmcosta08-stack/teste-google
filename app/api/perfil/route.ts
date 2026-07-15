@@ -65,6 +65,10 @@ export async function GET(req: NextRequest) {
       status_atividade_override_at: meta.status_atividade_override_at ?? null,
       cursos: meta.cursos ?? [],
       advertencia: meta.advertencia ?? [],
+      discord_username: meta.discord_username ?? null,
+      discord_id: meta.discord_id ?? null,
+      allowed_by: meta.allowed_by ?? null,
+      game_id: meta.game_id ?? null,
     },
   })
 }

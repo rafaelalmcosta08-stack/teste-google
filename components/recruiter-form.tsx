@@ -41,6 +41,10 @@ export function RecruiterForm() {
     patente: 'Recruta',
     senha: '',
     confirmarSenha: '',
+    discord_username: '',
+    discord_id: '',
+    allowed_by: '',
+    game_id: '',
   })
   const [status, setStatus] = useState<Status>('idle')
   const [erro, setErro] = useState<string | null>(null)
@@ -58,6 +62,26 @@ export function RecruiterForm() {
 
     if (!usuario) {
       setErro('O campo Usuário é obrigatório.')
+      return
+    }
+
+    if (!form.game_id.trim()) {
+      setErro('O campo ID (In-game / Passaporte) é obrigatório.')
+      return
+    }
+
+    if (!form.discord_username.trim()) {
+      setErro('O campo Usuário do Discord é obrigatório.')
+      return
+    }
+
+    if (!form.discord_id.trim()) {
+      setErro('O campo ID do Discord é obrigatório.')
+      return
+    }
+
+    if (!form.allowed_by.trim()) {
+      setErro('O campo Quem permitiu o registro é obrigatório.')
       return
     }
 
@@ -82,6 +106,10 @@ export function RecruiterForm() {
         qra: form.qra,
         patente: form.patente,
         senha: form.senha,
+        discord_username: form.discord_username.trim(),
+        discord_id: form.discord_id.trim(),
+        allowed_by: form.allowed_by.trim(),
+        game_id: form.game_id.trim(),
       }),
     })
 
@@ -110,16 +138,28 @@ export function RecruiterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="usuario">Usuário</Label>
-        <Input
-          id="usuario"
-          value={form.usuario}
-          onChange={update('usuario')}
-          placeholder="Digite seu usuário"
-          autoComplete="username"
-          required
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="usuario">Usuário</Label>
+          <Input
+            id="usuario"
+            value={form.usuario}
+            onChange={update('usuario')}
+            placeholder="Digite seu usuário"
+            autoComplete="username"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="game_id">ID (In-game / Passaporte)</Label>
+          <Input
+            id="game_id"
+            value={form.game_id}
+            onChange={update('game_id')}
+            placeholder="Ex: 1459"
+            required
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -129,7 +169,7 @@ export function RecruiterForm() {
             id="qra"
             value={form.qra}
             onChange={update('qra')}
-            placeholder="Ex: ALFA-01"
+            placeholder="Ex: Capitão Guilherme Silva"
           />
         </div>
         <div className="space-y-2">
@@ -148,6 +188,40 @@ export function RecruiterForm() {
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="discord_username">Usuário do Discord</Label>
+          <Input
+            id="discord_username"
+            value={form.discord_username}
+            onChange={update('discord_username')}
+            placeholder="Ex: rafael_alm"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="discord_id">ID do Discord</Label>
+          <Input
+            id="discord_id"
+            value={form.discord_id}
+            onChange={update('discord_id')}
+            placeholder="Ex: 1234567890123"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="allowed_by">Quem permitiu o registro?</Label>
+        <Input
+          id="allowed_by"
+          value={form.allowed_by}
+          onChange={update('allowed_by')}
+          placeholder="Ex: Coronel Silva"
+          required
+        />
       </div>
 
       <div className="space-y-2">

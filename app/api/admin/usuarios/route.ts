@@ -70,6 +70,10 @@ export async function GET(req: NextRequest) {
         status_atividade_override_at: meta.status_atividade_override_at ?? null,
         cursos: meta.cursos ?? [],
         advertencia: meta.advertencia ?? [],
+        discord_username: meta.discord_username ?? null,
+        discord_id: meta.discord_id ?? null,
+        allowed_by: meta.allowed_by ?? null,
+        game_id: meta.game_id ?? null,
       }
     })
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -92,6 +96,10 @@ export async function PATCH(req: NextRequest) {
     cursos,
     advertencia,
     last_login_at,
+    discord_username,
+    discord_id,
+    allowed_by,
+    game_id,
   } = await req.json()
   
   if (!id) return NextResponse.json({ error: 'ID ausente.' }, { status: 400 })
@@ -237,6 +245,10 @@ export async function PATCH(req: NextRequest) {
   if (cursos !== undefined) novoMeta.cursos = cursos
   if (advertencia !== undefined) novoMeta.advertencia = advertencia
   if (last_login_at !== undefined) novoMeta.last_login_at = last_login_at
+  if (discord_username !== undefined) novoMeta.discord_username = discord_username
+  if (discord_id !== undefined) novoMeta.discord_id = discord_id
+  if (allowed_by !== undefined) novoMeta.allowed_by = allowed_by
+  if (game_id !== undefined) novoMeta.game_id = game_id
 
   const { error: updateError } = await admin.auth.admin.updateUserById(id, {
     user_metadata: novoMeta,

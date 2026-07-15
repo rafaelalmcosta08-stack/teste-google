@@ -336,8 +336,18 @@ export default function PainelPage() {
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
             Painel do Oficial
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-            Bem-vindo, <span className="font-semibold text-foreground">{profile?.username || 'Oficial'}</span>. Central de comunicados táticos, cursos em aberto e editais vigentes da corporação.
+          <p className="mt-2 text-sm text-muted-foreground max-w-xl flex items-center flex-wrap gap-1">
+            <span>Bem-vindo,</span>
+            <span className="font-bold text-foreground">
+              {profile?.patente ? `${profile.patente} ` : ''}
+              {profile?.qra ? profile.qra : (profile?.username || 'Oficial')}
+            </span>
+            {profile?.game_id && (
+              <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-mono font-bold text-indigo-400">
+                ID: {profile.game_id}
+              </span>
+            )}
+            <span>. Central de comunicados táticos, cursos em aberto e editais vigentes.</span>
           </p>
         </div>
         {isAltoComando && (

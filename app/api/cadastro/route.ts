@@ -9,10 +9,10 @@ function getAdminClient() {
 }
 
 export async function POST(req: NextRequest) {
-  const { usuario, qra, patente, senha } = await req.json()
+  const { usuario, qra, patente, senha, discord_username, discord_id, allowed_by, game_id } = await req.json()
 
-  if (!usuario?.trim() || !senha) {
-    return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 })
+  if (!usuario?.trim() || !senha || !discord_username?.trim() || !discord_id?.trim() || !allowed_by?.trim() || !game_id?.trim()) {
+    return NextResponse.json({ error: 'Campos obrigatórios de cadastro ausentes.' }, { status: 400 })
   }
 
   const admin = getAdminClient()
@@ -42,6 +42,10 @@ export async function POST(req: NextRequest) {
       patente: patente?.trim() || null,
       status: 'pendente',
       role: 'user',
+      discord_username: discord_username?.trim() || null,
+      discord_id: discord_id?.trim() || null,
+      allowed_by: allowed_by?.trim() || null,
+      game_id: game_id?.trim() || null,
     },
   })
 
@@ -61,6 +65,10 @@ export async function POST(req: NextRequest) {
     patente: patente?.trim() || null,
     status: 'pendente',
     role: 'user',
+    discord_username: discord_username?.trim() || null,
+    discord_id: discord_id?.trim() || null,
+    allowed_by: allowed_by?.trim() || null,
+    game_id: game_id?.trim() || null,
   }).then(() => {}).catch(() => {})
 
   return NextResponse.json({ success: true })

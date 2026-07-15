@@ -13,6 +13,10 @@ interface Profile {
   status: 'pendente' | 'aprovado' | 'rejeitado'
   role: 'user' | 'admin'
   created_at: string
+  discord_username?: string | null
+  discord_id?: string | null
+  allowed_by?: string | null
+  game_id?: string | null
 }
 
 const statusLabel: Record<Profile['status'], { label: string; class: string }> = {
@@ -189,8 +193,9 @@ export default function AdministracaoPage() {
                 <table className="w-full text-sm">
                   <thead className="border-b border-border/60 bg-secondary/30">
                     <tr>
-                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Usuário</th>
-                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">QRA</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Usuário / QRA / ID</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Discord</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Autorização por</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Patente</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Cadastro</th>
                       <th className="px-4 py-3 text-right font-medium text-muted-foreground">Ações</th>
@@ -199,8 +204,32 @@ export default function AdministracaoPage() {
                   <tbody className="divide-y divide-border/40">
                     {pendentes.map((p) => (
                       <tr key={p.id} className="bg-background/30 transition-colors hover:bg-secondary/20">
-                        <td className="px-4 py-3 font-medium">{p.username}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{p.qra ?? '—'}</td>
+                        <td className="px-4 py-3 font-medium">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-foreground">{p.qra || '—'}</span>
+                              {p.game_id && (
+                                <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-mono font-bold text-indigo-400">
+                                  ID: {p.game_id}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">({p.username})</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">
+                          {p.discord_username ? (
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-foreground">@{p.discord_username}</span>
+                              {p.discord_id && <span className="text-[10px] text-muted-foreground/80 font-mono">ID: {p.discord_id}</span>}
+                            </div>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs font-semibold text-indigo-400">
+                          {p.allowed_by || '—'}
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground">{p.patente ?? '—'}</td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {new Date(p.created_at).toLocaleDateString('pt-BR')}
@@ -248,11 +277,11 @@ export default function AdministracaoPage() {
               <p className="text-sm text-muted-foreground">Nenhum usuário cadastrado ainda.</p>
             ) : (
               <div className="overflow-hidden rounded-xl border border-border/60">
-                <table className="w-full text-sm">
+                 <table className="w-full text-sm">
                   <thead className="border-b border-border/60 bg-secondary/30">
                     <tr>
-                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Usuário</th>
-                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">QRA</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Usuário / QRA / ID</th>
+                      <th className="px-4 py-3 text-left font-medium text-muted-foreground">Discord / Autorização</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Patente</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
                       <th className="px-4 py-3 text-left font-medium text-muted-foreground">Função</th>
@@ -264,8 +293,31 @@ export default function AdministracaoPage() {
                       const st = statusLabel[p.status]
                       return (
                         <tr key={p.id} className="bg-background/30 transition-colors hover:bg-secondary/20">
-                          <td className="px-4 py-3 font-medium">{p.username}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{p.qra ?? '—'}</td>
+                          <td className="px-4 py-3 font-medium">
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-foreground">{p.qra || '—'}</span>
+                                {p.game_id && (
+                                  <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-mono font-bold text-indigo-400">
+                                    ID: {p.game_id}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground">({p.username})</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground text-xs">
+                            <div className="flex flex-col">
+                              {p.discord_username ? (
+                                <span className="font-semibold text-foreground">@{p.discord_username}</span>
+                              ) : (
+                                <span className="text-muted-foreground/60 italic">—</span>
+                              )}
+                              {p.allowed_by && (
+                                <span className="text-[10px] text-indigo-400 font-semibold">Autorizado por: {p.allowed_by}</span>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-4 py-3 text-muted-foreground">{p.patente ?? '—'}</td>
                           <td className="px-4 py-3">
                             <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${st.class}`}>
