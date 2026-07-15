@@ -353,13 +353,17 @@ export default function HierarquiaPage() {
   // Filtra usuários aprovados e ordena por patente (da maior para a menor)
   const aprovados = users.filter((u) => u.status === 'aprovado')
   const filteredUsers = aprovados
-    .filter(
-      (u) =>
-        u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (u.qra && u.qra.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (u.game_id && u.game_id.includes(searchTerm)) ||
-        (u.discord_username && u.discord_username.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+    .filter((u) => {
+      const term = searchTerm.toLowerCase()
+      const matchUsername = u.username.toLowerCase().includes(term)
+      const matchQra = u.qra ? u.qra.toLowerCase().includes(term) : false
+      const matchGameId = u.game_id ? u.game_id.includes(searchTerm) : false
+      const matchDiscord = u.discord_username ? u.discord_username.toLowerCase().includes(term) : false
+      const matchPatente = u.patente ? u.patente.toLowerCase().includes(term) : false
+      const matchCargo = u.cargo && u.cargo.some((c) => c.toLowerCase().includes(term))
+      
+      return matchUsername || matchQra || matchGameId || matchDiscord || matchPatente || matchCargo
+    })
     .sort((a, b) => {
       const indexA = a.patente ? PATENTES.indexOf(a.patente) : -1
       const indexB = b.patente ? PATENTES.indexOf(b.patente) : -1
@@ -775,7 +779,7 @@ export default function HierarquiaPage() {
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Pesquisar por QRA ou Usuário..."
+            placeholder="Pesquisar por QRA, Patente ou Cargo..."
             className="pl-9 h-10 border-border/60 bg-secondary/20"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
