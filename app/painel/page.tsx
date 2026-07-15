@@ -11,7 +11,7 @@ export default function PainelPage() {
           Bem-vindo ao Painel
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-pretty leading-relaxed text-muted-foreground">
-          Selecione uma seção no menu superior para acessar os conteúdos restritos do
+          Selecione uma seção no menu lateral para acessar os conteúdos restritos do
           Departamento de Polícia Legacy.
         </p>
       </div>
