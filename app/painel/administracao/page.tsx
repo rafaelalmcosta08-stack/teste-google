@@ -313,6 +313,9 @@ export default function AdministracaoPage() {
                               ) : (
                                 <span className="text-muted-foreground/60 italic">—</span>
                               )}
+                              {p.discord_id && (
+                                <span className="text-[10px] text-muted-foreground/80 font-mono">ID: {p.discord_id}</span>
+                              )}
                               {p.allowed_by && (
                                 <span className="text-[10px] text-indigo-400 font-semibold">Autorizado por: {p.allowed_by}</span>
                               )}

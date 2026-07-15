@@ -356,7 +356,9 @@ export default function HierarquiaPage() {
     .filter(
       (u) =>
         u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (u.qra && u.qra.toLowerCase().includes(searchTerm.toLowerCase()))
+        (u.qra && u.qra.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (u.game_id && u.game_id.includes(searchTerm)) ||
+        (u.discord_username && u.discord_username.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .sort((a, b) => {
       const indexA = a.patente ? PATENTES.indexOf(a.patente) : -1
@@ -755,20 +757,18 @@ export default function HierarquiaPage() {
         <p className="text-sm text-muted-foreground mb-16">Perfil não encontrado.</p>
       )}
 
-      {/* 2. SEÇÃO DE GESTÃO DA HIERARQUIA POLICIAL (Apenas para quem tem permissão para setar) */}
-      {hasSetPermission && (
-        <>
-          <hr className="my-16 border-border/20" />
+      {/* 2. SEÇÃO DE HIERARQUIA POLICIAL (Visível para todos) */}
+      <hr className="my-16 border-border/20" />
 
-          <div className="mb-12">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
-              <Shield className="h-6 w-6 text-foreground" />
-            </div>
-            <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">Hierarquia Policial</h2>
-            <p className="mt-3 text-muted-foreground">
-              Gerencie patentes, cargos, unidades administrativas/operacionais, cursos e advertências dos policiais ativos.
-            </p>
-          </div>
+      <div className="mb-12">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+          <Shield className="h-6 w-6 text-foreground" />
+        </div>
+        <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">Hierarquia Policial</h2>
+        <p className="mt-3 text-muted-foreground">
+          Estrutura e dados de patentes, cargos, unidades, cursos e advertências dos policiais ativos.
+        </p>
+      </div>
 
       {/* Barra de Filtros */}
       <div className="mb-6 flex max-w-md items-center gap-3">
@@ -796,8 +796,8 @@ export default function HierarquiaPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-border/60 bg-secondary/30">
                 <tr>
-                  <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Usuário / QRA</th>
-                  <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Discord / Autorização</th>
+                  <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Policial / QRA / ID</th>
+                  <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Discord</th>
                   <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Patente</th>
                   <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Cargo(s)</th>
                   <th className="px-4 py-4 text-left font-semibold text-muted-foreground">Unid. Admin</th>
@@ -822,7 +822,6 @@ export default function HierarquiaPage() {
                               </span>
                             )}
                           </div>
-                          <span className="text-xs text-muted-foreground">({u.username})</span>
                         </div>
                       </td>
 
@@ -839,11 +838,6 @@ export default function HierarquiaPage() {
                           {u.discord_id && (
                             <span className="text-[10px] font-mono text-muted-foreground">
                               ID: {u.discord_id}
-                            </span>
-                          )}
-                          {u.allowed_by && (
-                            <span className="text-[10px] text-indigo-400 font-medium">
-                              Permitido por: {u.allowed_by}
                             </span>
                           )}
                         </div>
@@ -1058,8 +1052,6 @@ export default function HierarquiaPage() {
             </table>
           </div>
         </div>
-      )}
-        </>
       )}
 
       {/* Dynamic Floating Dropdown Overlay */}
