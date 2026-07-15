@@ -111,6 +111,9 @@ const ADVERTENCIAS = [
   'Advertência Ação 3/3',
 ]
 
+// Status de Atividade
+const STATUS_ATIVIDADE = ['Ativo', 'Inativo']
+
 interface UserProfile {
   id: string
   username: string
@@ -138,6 +141,35 @@ export default function HierarquiaPage() {
   
   // Controle de qual dropdown de célula está aberto
   const [activeDropdown, setActiveDropdown] = useState<{ userId: string; field: string } | null>(null)
+  const [dropdownCoords, setDropdownCoords] = useState<{ top: number; left: number } | null>(null)
+
+  const toggleOpen = (userId: string, field: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (activeDropdown?.userId === userId && activeDropdown?.field === field) {
+      setActiveDropdown(null)
+      setDropdownCoords(null)
+    } else {
+      setActiveDropdown({ userId, field })
+      const rect = e.currentTarget.getBoundingClientRect()
+      
+      const dropdownHeight = field === 'patente' ? 240 : (field === 'cargo' || field === 'cursos' || field === 'advertencia' ? 288 : 160)
+      let top = rect.bottom + 4
+      if (top + dropdownHeight > window.innerHeight && rect.top > dropdownHeight + 16) {
+        top = rect.top - dropdownHeight - 4
+      }
+      
+      let left = rect.left
+      const dropdownWidth = field === 'cargo' || field === 'cursos' ? 256 : (field === 'advertencia' ? 240 : 192)
+      if (left + dropdownWidth > window.innerWidth) {
+        left = window.innerWidth - dropdownWidth - 16
+      }
+      if (left < 16) {
+        left = 16
+      }
+
+      setDropdownCoords({ top, left })
+    }
+  }
 
   const fetchUsers = useCallback(async () => {
     setLoading(true)
@@ -155,14 +187,18 @@ export default function HierarquiaPage() {
     fetchUsers()
   }, [fetchUsers])
 
-  // Fecha o dropdown ao clicar fora
+  // Fecha o dropdown ao scrollar ou redimensionar para evitar desalinhamento
   useEffect(() => {
-    const handleGlobalClick = () => {
-      // O backdrop transparente cuida do fechamento ao clicar fora,
-      // mas mantemos isso como redundância limpa.
+    const handleScrollOrResize = () => {
+      setActiveDropdown(null)
+      setDropdownCoords(null)
     }
-    window.addEventListener('click', handleGlobalClick)
-    return () => window.removeEventListener('click', handleGlobalClick)
+    window.addEventListener('scroll', handleScrollOrResize, { passive: true })
+    window.addEventListener('resize', handleScrollOrResize)
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize)
+      window.removeEventListener('resize', handleScrollOrResize)
+    }
   }, [])
 
   // Salva alteração de campo no servidor
@@ -199,6 +235,7 @@ export default function HierarquiaPage() {
 
     await saveUserField(userId, updatePayload)
     setActiveDropdown(null)
+    setDropdownCoords(null)
   }
 
   // Toggles de Seleção Múltipla (Cargos, Cursos, Advertências)
@@ -236,21 +273,7 @@ export default function HierarquiaPage() {
   }
 
   const getPatenteColorClass = (patente: string | null) => {
-    if (!patente) return 'text-muted-foreground bg-secondary/40 border-border/60'
-    const p = patente.toLowerCase()
-    if (p.includes('coronel') || p.includes('major') || p.includes('capitão')) {
-      return 'text-red-400 bg-red-400/10 border-red-500/30'
-    }
-    if (p.includes('tenente') || p.includes('oficial')) {
-      return 'text-blue-400 bg-blue-400/10 border-blue-500/30'
-    }
-    if (p.includes('sargento')) {
-      return 'text-yellow-400 bg-yellow-400/10 border-yellow-500/30'
-    }
-    if (p.includes('cabo') || p.includes('soldado')) {
-      return 'text-green-400 bg-green-400/10 border-green-500/30'
-    }
-    return 'text-gray-400 bg-gray-400/10 border-gray-500/20'
+    return 'text-foreground bg-secondary/80 border-border/60'
   }
 
   // Filtra usuários aprovados
@@ -410,16 +433,10 @@ export default function HierarquiaPage() {
     )
   }
 
+  const activeUser = users.find((u) => u.id === activeDropdown?.userId)
+
   return (
     <main className="mx-auto max-w-[1600px] px-6 pb-24 pt-16 sm:px-10 lg:px-16">
-      {/* Backdrop transparente para fechar dropdowns */}
-      {activeDropdown && (
-        <div
-          className="fixed inset-0 z-40 bg-transparent"
-          onClick={() => setActiveDropdown(null)}
-        />
-      )}
-
       {/* Cabeçalho */}
       <div className="mb-12">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
@@ -469,16 +486,6 @@ export default function HierarquiaPage() {
               </thead>
               <tbody className="divide-y divide-border/40">
                 {filteredUsers.map((u) => {
-                  const isOpen = (field: string) => activeDropdown?.userId === u.id && activeDropdown?.field === field
-                  const toggleOpen = (field: string, e: React.MouseEvent) => {
-                    e.stopPropagation()
-                    if (isOpen(field)) {
-                      setActiveDropdown(null)
-                    } else {
-                      setActiveDropdown({ userId: u.id, field })
-                    }
-                  }
-
                   return (
                     <tr key={u.id} className="bg-background/10 transition-colors hover:bg-secondary/10">
                       {/* QRA / Usuário */}
@@ -490,9 +497,9 @@ export default function HierarquiaPage() {
                       </td>
 
                       {/* Patente */}
-                      <td className="px-4 py-4 relative">
+                      <td className="px-4 py-4">
                         <button
-                          onClick={(e) => toggleOpen('patente', e)}
+                          onClick={(e) => toggleOpen(u.id, 'patente', e)}
                           className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:opacity-85 cursor-pointer transition-opacity ${getPatenteColorClass(
                             u.patente
                           )}`}
@@ -500,29 +507,12 @@ export default function HierarquiaPage() {
                           <span>{u.patente ?? 'Recruta'}</span>
                           <ChevronDown className="h-3 w-3 opacity-60" />
                         </button>
-
-                        {isOpen('patente') && (
-                          <div className="absolute left-4 top-12 z-55 w-48 max-h-60 overflow-y-auto rounded-lg border border-border/80 bg-popover p-1 shadow-xl backdrop-blur-md">
-                            {PATENTES.map((pat) => (
-                              <button
-                                key={pat}
-                                onClick={() => handleSingleSelect(u.id, 'patente', pat)}
-                                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs font-medium hover:bg-secondary text-foreground ${
-                                  u.patente === pat ? 'bg-secondary' : ''
-                                }`}
-                              >
-                                <span>{pat}</span>
-                                {u.patente === pat && <Check className="h-3.5 w-3.5 text-primary" />}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </td>
 
                       {/* Cargos */}
-                      <td className="px-4 py-4 relative min-w-[200px]">
+                      <td className="px-4 py-4 min-w-[200px]">
                         <div
-                          onClick={(e) => toggleOpen('cargo', e)}
+                          onClick={(e) => toggleOpen(u.id, 'cargo', e)}
                           className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
                         >
                           {u.cargo && u.cargo.length > 0 && u.cargo[0] !== 'Sem Efetividade' ? (
@@ -539,91 +529,34 @@ export default function HierarquiaPage() {
                           )}
                           <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
                         </div>
-
-                        {isOpen('cargo') && (
-                          <div className="absolute left-4 top-14 z-55 w-64 max-h-72 overflow-y-auto rounded-lg border border-border/80 bg-popover p-1 shadow-xl backdrop-blur-md">
-                            <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1">
-                              Selecionar Cargos
-                            </div>
-                            {CARGOS.map((car) => {
-                              const isChecked = u.cargo?.includes(car)
-                              return (
-                                <button
-                                  key={car}
-                                  onClick={() => handleMultiSelectToggle(u.id, 'cargo', car)}
-                                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium"
-                                >
-                                  <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
-                                    {isChecked && <Check className="h-3 w-3 text-primary" />}
-                                  </div>
-                                  <span className="truncate">{car}</span>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        )}
                       </td>
 
                       {/* Unid Admin */}
-                      <td className="px-4 py-4 relative">
+                      <td className="px-4 py-4">
                         <button
-                          onClick={(e) => toggleOpen('unidade_administrativa', e)}
+                          onClick={(e) => toggleOpen(u.id, 'unidade_administrativa', e)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-1 text-xs font-medium hover:bg-secondary/50 text-foreground"
                         >
                           <span>{u.unidade_administrativa || 'Sem Efetividade'}</span>
                           <ChevronDown className="h-3 w-3 opacity-60" />
                         </button>
-
-                        {isOpen('unidade_administrativa') && (
-                          <div className="absolute left-4 top-12 z-55 w-48 rounded-lg border border-border/80 bg-popover p-1 shadow-xl backdrop-blur-md">
-                            {UNIDADES_ADMINISTRATIVAS.map((ua) => (
-                              <button
-                                key={ua}
-                                onClick={() => handleSingleSelect(u.id, 'unidade_administrativa', ua)}
-                                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs font-medium hover:bg-secondary text-foreground ${
-                                  u.unidade_administrativa === ua ? 'bg-secondary' : ''
-                                }`}
-                              >
-                                <span>{ua}</span>
-                                {u.unidade_administrativa === ua && <Check className="h-3.5 w-3.5 text-primary" />}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </td>
 
                       {/* Unid Operacional */}
-                      <td className="px-4 py-4 relative">
+                      <td className="px-4 py-4">
                         <button
-                          onClick={(e) => toggleOpen('unidade_operacional', e)}
+                          onClick={(e) => toggleOpen(u.id, 'unidade_operacional', e)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-secondary/30 px-2.5 py-1 text-xs font-medium hover:bg-secondary/50 text-foreground"
                         >
                           <span>{u.unidade_operacional || 'Sem Efetividade'}</span>
                           <ChevronDown className="h-3 w-3 opacity-60" />
                         </button>
-
-                        {isOpen('unidade_operacional') && (
-                          <div className="absolute left-4 top-12 z-55 w-48 rounded-lg border border-border/80 bg-popover p-1 shadow-xl backdrop-blur-md">
-                            {UNIDADES_OPERACIONAIS.map((uo) => (
-                              <button
-                                key={uo}
-                                onClick={() => handleSingleSelect(u.id, 'unidade_operacional', uo)}
-                                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs font-medium hover:bg-secondary text-foreground ${
-                                  u.unidade_operacional === uo ? 'bg-secondary' : ''
-                                }`}
-                              >
-                                <span>{uo}</span>
-                                {u.unidade_operacional === uo && <Check className="h-3.5 w-3.5 text-primary" />}
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </td>
 
                       {/* Status de Atividade */}
-                      <td className="px-4 py-4 relative">
+                      <td className="px-4 py-4">
                         <button
-                          onClick={(e) => toggleOpen('status_atividade', e)}
+                          onClick={(e) => toggleOpen(u.id, 'status_atividade', e)}
                           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold hover:opacity-85 transition-opacity cursor-pointer ${
                             u.status_atividade === 'Inativo'
                               ? 'text-zinc-400 bg-zinc-500/10 border-zinc-500/30'
@@ -634,35 +567,12 @@ export default function HierarquiaPage() {
                           <span>{u.status_atividade ?? 'Ativo'}</span>
                           <ChevronDown className="h-3 w-3 opacity-60" />
                         </button>
-
-                        {isOpen('status_atividade') && (
-                          <div className="absolute left-4 top-12 z-55 w-40 rounded-lg border border-border/80 bg-popover p-1 shadow-xl backdrop-blur-md">
-                            <div className="px-2 py-1 text-[9px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 leading-tight">
-                              Alterar Status (Manual)
-                            </div>
-                            {STATUS_ATIVIDADE.map((sa) => (
-                              <button
-                                key={sa}
-                                onClick={() => handleSingleSelect(u.id, 'status_atividade', sa)}
-                                className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-xs font-medium hover:bg-secondary text-foreground ${
-                                  u.status_atividade === sa ? 'bg-secondary' : ''
-                                }`}
-                              >
-                                <span>{sa}</span>
-                                {u.status_atividade === sa && <Check className="h-3.5 w-3.5 text-primary" />}
-                              </button>
-                            ))}
-                            <div className="p-2 border-t border-border/30 mt-1 text-[9px] leading-relaxed text-muted-foreground">
-                              Muda para <span className="font-semibold text-foreground">Inativo</span> se ficar 15 dias sem fazer login.
-                            </div>
-                          </div>
-                        )}
                       </td>
 
                       {/* Cursos */}
-                      <td className="px-4 py-4 relative min-w-[200px]">
+                      <td className="px-4 py-4 min-w-[200px]">
                         <div
-                          onClick={(e) => toggleOpen('cursos', e)}
+                          onClick={(e) => toggleOpen(u.id, 'cursos', e)}
                           className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
                         >
                           {u.cursos && u.cursos.length > 0 ? (
@@ -679,35 +589,12 @@ export default function HierarquiaPage() {
                           )}
                           <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
                         </div>
-
-                        {isOpen('cursos') && (
-                          <div className="absolute right-4 top-14 z-55 w-64 max-h-72 overflow-y-auto rounded-lg border border-border/80 bg-popover p-1 shadow-xl backdrop-blur-md">
-                            <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1">
-                              Toggelar Cursos
-                            </div>
-                            {CURSOS.map((cur) => {
-                              const isChecked = u.cursos?.includes(cur)
-                              return (
-                                <button
-                                  key={cur}
-                                  onClick={() => handleMultiSelectToggle(u.id, 'cursos', cur)}
-                                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium"
-                                >
-                                  <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
-                                    {isChecked && <Check className="h-3 w-3 text-primary" />}
-                                  </div>
-                                  <span className="truncate">{cur}</span>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        )}
                       </td>
 
                       {/* Advertências */}
-                      <td className="px-4 py-4 relative min-w-[180px]">
+                      <td className="px-4 py-4 min-w-[180px]">
                         <div
-                          onClick={(e) => toggleOpen('advertencia', e)}
+                          onClick={(e) => toggleOpen(u.id, 'advertencia', e)}
                           className="flex flex-wrap gap-1 max-w-[280px] p-1.5 rounded-lg border border-border/30 bg-secondary/10 hover:bg-secondary/20 cursor-pointer transition-all min-h-[36px]"
                         >
                           {u.advertencia && u.advertencia.length > 0 ? (
@@ -724,29 +611,6 @@ export default function HierarquiaPage() {
                           )}
                           <ChevronDown className="h-3.5 w-3.5 ml-auto self-center opacity-60" />
                         </div>
-
-                        {isOpen('advertencia') && (
-                          <div className="absolute right-4 top-14 z-55 w-60 max-h-72 overflow-y-auto rounded-lg border border-border/80 bg-popover p-1 shadow-xl backdrop-blur-md">
-                            <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1">
-                              Toggelar Advertências
-                            </div>
-                            {ADVERTENCIAS.map((adv) => {
-                              const isChecked = u.advertencia?.includes(adv)
-                              return (
-                                <button
-                                  key={adv}
-                                  onClick={() => handleMultiSelectToggle(u.id, 'advertencia', adv)}
-                                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium"
-                                >
-                                  <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
-                                    {isChecked && <Check className="h-3 w-3 text-primary" />}
-                                  </div>
-                                  <span className="truncate">{adv}</span>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        )}
                       </td>
                     </tr>
                   )
@@ -755,6 +619,175 @@ export default function HierarquiaPage() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Dynamic Floating Dropdown Overlay */}
+      {activeDropdown && dropdownCoords && activeUser && (
+        <>
+          {/* Backdrop to dismiss */}
+          <div
+            className="fixed inset-0 z-[9998] bg-transparent cursor-default"
+            onClick={() => {
+              setActiveDropdown(null)
+              setDropdownCoords(null)
+            }}
+          />
+
+          {/* Floating Dropdown Container */}
+          <div
+            className="fixed z-[9999] rounded-lg border border-border/80 bg-popover p-1 shadow-2xl backdrop-blur-md overflow-y-auto"
+            style={{
+              top: `${dropdownCoords.top}px`,
+              left: `${dropdownCoords.left}px`,
+              width: activeDropdown.field === 'cargo' || activeDropdown.field === 'cursos' ? '256px' : activeDropdown.field === 'advertencia' ? '240px' : '192px',
+              maxHeight: activeDropdown.field === 'cargo' || activeDropdown.field === 'cursos' || activeDropdown.field === 'advertencia' ? '288px' : '240px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {activeDropdown.field === 'patente' && (
+              <div className="flex flex-col gap-0.5">
+                {PATENTES.map((pat) => (
+                  <button
+                    key={pat}
+                    onClick={() => handleSingleSelect(activeUser.id, 'patente', pat)}
+                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
+                      activeUser.patente === pat ? 'bg-secondary' : ''
+                    }`}
+                  >
+                    <span>{pat}</span>
+                    {activeUser.patente === pat && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeDropdown.field === 'cargo' && (
+              <div className="flex flex-col gap-0.5">
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                  Selecionar Cargos
+                </div>
+                {CARGOS.map((car) => {
+                  const isChecked = activeUser.cargo?.includes(car)
+                  return (
+                    <button
+                      key={car}
+                      onClick={() => handleMultiSelectToggle(activeUser.id, 'cargo', car)}
+                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
+                    >
+                      <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
+                        {isChecked && <Check className="h-3 w-3 text-primary" />}
+                      </div>
+                      <span className="truncate">{car}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {activeDropdown.field === 'unidade_administrativa' && (
+              <div className="flex flex-col gap-0.5">
+                {UNIDADES_ADMINISTRATIVAS.map((ua) => (
+                  <button
+                    key={ua}
+                    onClick={() => handleSingleSelect(activeUser.id, 'unidade_administrativa', ua)}
+                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
+                      activeUser.unidade_administrativa === ua ? 'bg-secondary' : ''
+                    }`}
+                  >
+                    <span>{ua}</span>
+                    {activeUser.unidade_administrativa === ua && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeDropdown.field === 'unidade_operacional' && (
+              <div className="flex flex-col gap-0.5">
+                {UNIDADES_OPERACIONAIS.map((uo) => (
+                  <button
+                    key={uo}
+                    onClick={() => handleSingleSelect(activeUser.id, 'unidade_operacional', uo)}
+                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
+                      activeUser.unidade_operacional === uo ? 'bg-secondary' : ''
+                    }`}
+                  >
+                    <span>{uo}</span>
+                    {activeUser.unidade_operacional === uo && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeDropdown.field === 'status_atividade' && (
+              <div className="flex flex-col gap-0.5">
+                <div className="px-2 py-1 text-[9px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 leading-tight sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                  Alterar Status (Manual)
+                </div>
+                {STATUS_ATIVIDADE.map((sa) => (
+                  <button
+                    key={sa}
+                    onClick={() => handleSingleSelect(activeUser.id, 'status_atividade', sa)}
+                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs font-medium hover:bg-secondary text-foreground cursor-pointer transition-colors ${
+                      activeUser.status_atividade === sa ? 'bg-secondary' : ''
+                    }`}
+                  >
+                    <span>{sa}</span>
+                    {activeUser.status_atividade === sa && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </button>
+                ))}
+                <div className="p-2 border-t border-border/30 mt-1 text-[9px] leading-relaxed text-muted-foreground">
+                  Muda para <span className="font-semibold text-foreground">Inativo</span> se ficar 15 dias sem fazer login.
+                </div>
+              </div>
+            )}
+
+            {activeDropdown.field === 'cursos' && (
+              <div className="flex flex-col gap-0.5">
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                  Toggelar Cursos
+                </div>
+                {CURSOS.map((cur) => {
+                  const isChecked = activeUser.cursos?.includes(cur)
+                  return (
+                    <button
+                      key={cur}
+                      onClick={() => handleMultiSelectToggle(activeUser.id, 'cursos', cur)}
+                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
+                    >
+                      <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
+                        {isChecked && <Check className="h-3 w-3 text-primary" />}
+                      </div>
+                      <span className="truncate">{cur}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {activeDropdown.field === 'advertencia' && (
+              <div className="flex flex-col gap-0.5">
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase border-b border-border/30 mb-1 sticky top-0 bg-popover/90 backdrop-blur-sm z-10">
+                  Toggelar Advertências
+                </div>
+                {ADVERTENCIAS.map((adv) => {
+                  const isChecked = activeUser.advertencia?.includes(adv)
+                  return (
+                    <button
+                      key={adv}
+                      onClick={() => handleMultiSelectToggle(activeUser.id, 'advertencia', adv)}
+                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs hover:bg-secondary text-left text-foreground font-medium cursor-pointer transition-colors"
+                    >
+                      <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border border-border/60">
+                        {isChecked && <Check className="h-3 w-3 text-primary" />}
+                      </div>
+                      <span className="truncate">{adv}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </main>
   )
