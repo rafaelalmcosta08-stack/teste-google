@@ -20,6 +20,7 @@ import {
   ArrowRight,
   User,
   ExternalLink,
+  Plus,
 } from 'lucide-react'
 
 interface Aviso {
