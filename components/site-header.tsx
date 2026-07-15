@@ -81,7 +81,7 @@ export function SiteHeader() {
               />
             )}
             <UserPlus className="h-4 w-4" />
-            <span className="hidden sm:inline">Recrutador</span>
+            <span className="hidden sm:inline">Cadastro Policial</span>
           </Link>
 
           <Link

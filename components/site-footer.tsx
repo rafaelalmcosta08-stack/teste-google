@@ -39,7 +39,7 @@ export function SiteFooter() {
               href="/recrutador"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Recrutador
+              Cadastro Policial
             </Link>
           </nav>
 

@@ -28,7 +28,7 @@ export default function LoginPage() {
           <LoginForm />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Quer ser recrutador?{' '}
+            Quer fazer seu cadastro policial?{' '}
             <Link href="/recrutador" className="font-medium text-foreground hover:underline">
               Cadastre-se aqui
             </Link>

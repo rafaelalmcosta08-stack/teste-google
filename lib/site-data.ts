@@ -5,6 +5,11 @@ import {
   Target,
   Crosshair,
   Heart,
+  Zap,
+  Bike,
+  Plane,
+  Scale,
+  GraduationCap,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -32,35 +37,55 @@ export const units: Unit[] = [
     icon: Search,
   },
   {
-    sigla: 'PRF',
-    nome: 'Polícia Rodoviária Federal',
+    sigla: 'CORE',
+    nome: 'Coordenação de Recursos Especiais',
     descricao:
-      'Atua nas rodovias federais, fiscalizando o trânsito e combatendo crimes nas estradas.',
-    icon: Car,
+      'Unidade tática responsável por apoiar as demais divisões em operações de baixo risco e de patrulhamento especial, especializada em ações Medias e Pequenas, atuando em intervenções rápidas.',
+    icon: Crosshair,
+    image: '/images/unit-cot.png',
   },
   {
-    sigla: 'COE',
-    nome: 'Comando de Operações Especiais',
+    sigla: 'BOPE',
+    nome: 'Batalhão de Operações Policiais Especiais',
     descricao:
       'Unidade de elite responsável por ações grandes na cidade de Legacy. Especializada em operações de alto risco, resgate de reféns e situações de crise que exigem máxima força e precisão.',
     icon: Target,
     image: '/images/unit-coe.png',
   },
   {
-    sigla: 'COT',
-    nome: 'Comando de Operações Táticas',
+    sigla: 'GAR',
+    nome: 'Grupamento de Rápida Resposta',
     descricao:
-      'Força tática especializada em ações pequenas e médias na cidade de Legacy. Atua em intervenções rápidas, patrulhamento tático e operações que exigem resposta imediata.',
-    icon: Crosshair,
-    image: '/images/unit-cot.png',
+      'Unidade especializada em perseguição e interceptação veicular. Equipada com viaturas de alta performance, atua na contenção de fugas e no cerco a suspeitos em vias expressas, sendo acionada em situações que exigem velocidade e resposta imediata.',
+    icon: Zap,
   },
   {
-    sigla: 'UMM',
-    nome: 'Unidade Médica Militar',
+    sigla: 'GTM',
+    nome: 'Grupamento Tático de Motociclistas',
     descricao:
-      'Responsável pelo suporte médico em operações, atendimento de emergência e saúde dos agentes.',
-    icon: Heart,
-    image: '/images/unit-umm.png',
+      'Unidade de mobilidade urbana montada em motocicletas. Atua no patrulhamento ágil de áreas de difícil acesso para viaturas convencionais, apoio em perseguições em vias estreitas e deslocamento rápido entre ocorrências simultâneas.',
+    icon: Bike,
+  },
+  {
+    sigla: 'GAEP',
+    nome: 'Grupamento Aéreo de Escolta e Patrulhamento',
+    descricao:
+      'Unidade aérea composta por oficiais pilotos e atiradores especializados. Responsável pelo monitoramento aéreo da cidade, escolta de operações terrestres e apoio de precisão em situações de alto risco, com visão privilegiada sobre o terreno.',
+    icon: Plane,
+  },
+  {
+    sigla: 'CORREGEDORIA',
+    nome: 'Unidade de Controle Interno',
+    descricao:
+      'Órgão responsável pela apuração de denúncias, investigação de condutas irregulares e aplicação de sanções administrativas dentro das corporações policiais. Atua na fiscalização do cumprimento de normas internas, garantindo a integridade e a disciplina dos agentes.',
+    icon: Scale,
+  },
+  {
+    sigla: 'APM',
+    nome: 'Academia da Polícia Militar',
+    descricao:
+      'Unidade responsável pela formação, capacitação e recrutamento de novos agentes. Conduz cursos de formação básica, treinamentos especializados e processos seletivos, preparando os candidatos para o ingresso e a atuação nas demais divisões policiais.',
+    icon: GraduationCap,
   },
 ]
 

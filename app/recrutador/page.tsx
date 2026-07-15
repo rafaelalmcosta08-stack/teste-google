@@ -19,9 +19,9 @@ export default function RecrutadorPage() {
             >
               <UserPlus className="h-6 w-6 text-foreground" />
             </div>
-            <h1 className="mt-5 text-2xl font-bold tracking-tight">Cadastro de Recrutador</h1>
+            <h1 className="mt-5 text-2xl font-bold tracking-tight">Cadastro Policial</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Cadastre-se para fazer parte da equipe de recrutamento.{' '}
+              Cadastre-se para fazer parte do Departamento de Polícia.{' '}
               Seu cadastro será analisado pelo administrador.
             </p>
           </div>

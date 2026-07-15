@@ -39,7 +39,7 @@ export default function HomePage() {
               className="liquid-glass-btn rounded-lg"
             >
               <div className="liquid-glass-inner rounded-lg px-5 py-2.5 text-sm font-semibold text-white">
-                Seja um Recrutador
+                Cadastro Policial
               </div>
             </Link>
           </div>
