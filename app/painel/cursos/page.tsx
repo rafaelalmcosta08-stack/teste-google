@@ -1398,18 +1398,6 @@ export default function CursosPage() {
                           </span>
                         </div>
                       </div>
-
-                      {maxSubscribedCourse && (
-                        <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1">
-                          <span className="block text-[10px] text-muted-foreground uppercase">Maior Recorde de Inscritos</span>
-                          <span className="block text-xs font-semibold text-foreground truncate">
-                            {(maxSubscribedCourse as Course).title}
-                          </span>
-                          <span className="block text-[10px] font-mono text-muted-foreground">
-                            {(maxSubscribedCourse as Course).subscribers.length} inscritos
-                          </span>
-                        </div>
-                      )}
                     </div>
 
 

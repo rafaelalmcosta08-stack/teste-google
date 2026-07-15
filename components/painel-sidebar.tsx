@@ -34,9 +34,16 @@ export function PainelSidebar() {
   const router = useRouter()
   const { logout, profile } = useAuth()
 
-  const isAltoComando = profile?.cargo?.includes('Alto Comando') || profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin'
+  const isAltoComando = profile?.cargo?.includes('Alto Comando') || isAdmin
 
-  const activeMenuItems = [...menuItems]
+  const activeMenuItems = menuItems.filter((item) => {
+    if (item.href === '/painel/administracao') {
+      return isAdmin
+    }
+    return true
+  })
+
   if (isAltoComando) {
     activeMenuItems.push({ label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone })
   }
