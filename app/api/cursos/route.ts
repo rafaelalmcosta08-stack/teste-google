@@ -23,6 +23,8 @@ export interface Course {
   creatorId: string
   creatorQra: string
   createdAt: string
+  instructorId?: string
+  instructorQra?: string
   subscribers: Array<{
     userId: string
     qra: string
@@ -107,9 +109,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Permissão insuficiente para criar cursos.' }, { status: 403 })
     }
 
-    const { title, description, startDate, endDate, vagasLimit } = body
-    if (!title?.trim() || !description?.trim() || !startDate || !endDate || !vagasLimit) {
-      return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
+    const { title, description, startDate, endDate, vagasLimit, instructorId, instructorQra } = body
+    if (!title?.trim() || !description?.trim() || !startDate || !endDate || !vagasLimit || !instructorId) {
+      return NextResponse.json({ error: 'Preencha todos os campos obrigatórios, incluindo o Instrutor Responsável.' }, { status: 400 })
     }
 
     const vagas = parseInt(vagasLimit)
@@ -127,6 +129,8 @@ export async function POST(req: NextRequest) {
       creatorId: requester.id,
       creatorQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
       createdAt: new Date().toISOString(),
+      instructorId,
+      instructorQra: instructorQra || 'Nenhum',
       subscribers: [],
       readBy: [requester.id], // Creator has already read it
     }
@@ -139,7 +143,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'edit') {
-    const { id, title, description, startDate, endDate, vagasLimit } = body
+    const { id, title, description, startDate, endDate, vagasLimit, instructorId, instructorQra } = body
     const courseIndex = courses.findIndex(c => c.id === id)
     if (courseIndex === -1) {
       return NextResponse.json({ error: 'Curso não encontrado.' }, { status: 404 })
@@ -169,8 +173,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Não é possível editar um curso que já foi finalizado.' }, { status: 400 })
     }
 
-    if (!title?.trim() || !description?.trim() || !startDate || !endDate || !vagasLimit) {
-      return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
+    if (!title?.trim() || !description?.trim() || !startDate || !endDate || !vagasLimit || !instructorId) {
+      return NextResponse.json({ error: 'Preencha todos os campos obrigatórios, incluindo o Instrutor Responsável.' }, { status: 400 })
     }
 
     const vagas = parseInt(vagasLimit)
@@ -183,6 +187,8 @@ export async function POST(req: NextRequest) {
     course.startDate = startDate
     course.endDate = endDate
     course.vagasLimit = vagas
+    course.instructorId = instructorId
+    course.instructorQra = instructorQra || 'Nenhum'
 
     await writeCourses(courses)
     await broadcastUpdate()

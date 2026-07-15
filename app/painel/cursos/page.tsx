@@ -43,6 +43,8 @@ interface Course {
   creatorId: string
   creatorQra: string
   createdAt: string
+  instructorId?: string
+  instructorQra?: string
   subscribers: Array<{
     userId: string
     qra: string
@@ -70,6 +72,7 @@ export default function CursosPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [vagasLimit, setVagasLimit] = useState('20')
+  const [instructorId, setInstructorId] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formSuccess, setFormSuccess] = useState(false)
 
@@ -80,6 +83,7 @@ export default function CursosPage() {
   const [editStartDate, setEditStartDate] = useState('')
   const [editEndDate, setEditEndDate] = useState('')
   const [editVagasLimit, setEditVagasLimit] = useState('')
+  const [editInstructorId, setEditInstructorId] = useState('')
 
   // Expanded Cards (Ler mais)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
@@ -88,7 +92,7 @@ export default function CursosPage() {
   const [brasiliaTime, setBrasiliaTime] = useState<string>('')
 
   // --- NEW STATES FOR CUSTOM SIDEBAR ---
-  const [sidebarTab, setSidebarTab] = useState<'stats' | 'evaluations' | 'officers'>('stats')
+  const [sidebarTab, setSidebarTab] = useState<'stats' | 'evaluations' | 'officers' | 'instructors'>('stats')
   const [selectedCourseForEvaluation, setSelectedCourseForEvaluation] = useState<Course | null>(null)
   const [evaluationInputs, setEvaluationInputs] = useState<Record<string, { status: 'Aprovado' | 'Reprovado' | ''; nota: string }>>({})
   const [officersList, setOfficersList] = useState<any[]>([])
@@ -96,6 +100,8 @@ export default function CursosPage() {
   const [officersSearchQuery, setOfficersSearchQuery] = useState('')
   const [selectedOfficerForProfile, setSelectedOfficerForProfile] = useState<any | null>(null)
   const [evaluationStatusText, setEvaluationStatusText] = useState<Record<string, string>>({}) // userId -> status message
+  const [instructorsSearchQuery, setInstructorsSearchQuery] = useState('')
+  const [selectedInstructorForProfile, setSelectedInstructorForProfile] = useState<any | null>(null)
 
   const sidebarRef = useRef<HTMLDivElement>(null)
 
@@ -230,11 +236,19 @@ export default function CursosPage() {
     e.preventDefault()
     if (!isAuthorizedToPublish) return
 
+    if (!instructorId) {
+      setError('Por favor, selecione um Instrutor Responsável.')
+      return
+    }
+
     setSubmitting(true)
     setError(null)
     setFormSuccess(false)
 
     try {
+      const chosenInstructor = activeInstructorsList.find(o => o.id === instructorId)
+      const instructorQra = chosenInstructor ? (chosenInstructor.qra || chosenInstructor.username || 'Instrutor') : 'Nenhum'
+
       const res = await fetch('/api/cursos', {
         method: 'POST',
         headers: {
@@ -248,6 +262,8 @@ export default function CursosPage() {
           startDate,
           endDate,
           vagasLimit,
+          instructorId,
+          instructorQra,
         }),
       })
 
@@ -260,6 +276,7 @@ export default function CursosPage() {
       setStartDate('')
       setEndDate('')
       setVagasLimit('20')
+      setInstructorId('')
       setFormSuccess(true)
       fetchCourses()
 
@@ -277,10 +294,18 @@ export default function CursosPage() {
     e.preventDefault()
     if (!editingCourse) return
 
+    if (!editInstructorId) {
+      setError('Por favor, selecione um Instrutor Responsável.')
+      return
+    }
+
     setSubmitting(true)
     setError(null)
 
     try {
+      const chosenInstructor = activeInstructorsList.find(o => o.id === editInstructorId)
+      const editInstructorQra = chosenInstructor ? (chosenInstructor.qra || chosenInstructor.username || 'Instrutor') : 'Nenhum'
+
       const res = await fetch('/api/cursos', {
         method: 'POST',
         headers: {
@@ -295,6 +320,8 @@ export default function CursosPage() {
           startDate: editStartDate,
           endDate: editEndDate,
           vagasLimit: editVagasLimit,
+          instructorId: editInstructorId,
+          instructorQra: editInstructorQra,
         }),
       })
 
@@ -434,6 +461,7 @@ export default function CursosPage() {
     setEditStartDate(course.startDate)
     setEditEndDate(course.endDate)
     setEditVagasLimit(course.vagasLimit.toString())
+    setEditInstructorId(course.instructorId || '')
   }
 
   // Save an individual subscriber evaluation
@@ -516,11 +544,14 @@ export default function CursosPage() {
   const approvalPercentage = totalEvaluatedCount > 0 ? Math.round((approvedCount / totalEvaluatedCount) * 100) : 0
 
   let maxSubscribedCourse: Course | null = null
-  courses.forEach(c => {
+  const historyCourses = cursosFeitos.length > 0 ? cursosFeitos : courses
+  historyCourses.forEach(c => {
     if (!maxSubscribedCourse || c.subscribers.length > maxSubscribedCourse.subscribers.length) {
       maxSubscribedCourse = c
     }
   })
+
+
 
   // Check if a finished course has pending evaluations
   const getPendingCount = (course: Course) => {
@@ -566,13 +597,74 @@ export default function CursosPage() {
       .sort((a, b) => b.startDate.localeCompare(a.startDate))
   }
 
-  // Search filtered officers
+  // Search filtered officers (excluding instructors)
   const filteredOfficers = officersSearchQuery.trim() === ''
     ? []
-    : officersList.filter(o =>
-        (o.qra || '').toLowerCase().includes(officersSearchQuery.toLowerCase()) ||
-        (o.username || '').toLowerCase().includes(officersSearchQuery.toLowerCase())
-      )
+    : officersList.filter(o => {
+        const cargos = o.cargo ?? []
+        const isInstructor = cargos.includes('Instrutor Treinamento Operacional') || cargos.includes('Instrutor De Cursos e Recrutamentos')
+        if (isInstructor) return false
+        return (
+          (o.qra || '').toLowerCase().includes(officersSearchQuery.toLowerCase()) ||
+          (o.username || '').toLowerCase().includes(officersSearchQuery.toLowerCase())
+        )
+      })
+
+  // Search filtered instructors
+  const filteredInstructors = instructorsSearchQuery.trim() === ''
+    ? []
+    : officersList.filter(o => {
+        const cargos = o.cargo ?? []
+        const isInstructor = cargos.includes('Instrutor Treinamento Operacional') || cargos.includes('Instrutor De Cursos e Recrutamentos')
+        if (!isInstructor) return false
+        return (
+          (o.qra || '').toLowerCase().includes(instructorsSearchQuery.toLowerCase()) ||
+          (o.username || '').toLowerCase().includes(instructorsSearchQuery.toLowerCase())
+        )
+      })
+
+  // Active instructors list for select input
+  const activeInstructorsList = officersList.filter(o => {
+    const cargos = o.cargo ?? []
+    return cargos.includes('Instrutor Treinamento Operacional') || cargos.includes('Instrutor De Cursos e Recrutamentos')
+  })
+
+  // Helper to compute instructor stats
+  const getInstructorCourseHistory = (instructorId: string) => {
+    return courses
+      .filter(c => c.instructorId === instructorId)
+      .map(c => {
+        const totalParticipants = c.subscribers.length
+        let approved = 0
+        let reproved = 0
+        let sumGrades = 0
+        let gradedCount = 0
+
+        if (c.evaluations) {
+          Object.values(c.evaluations).forEach(ev => {
+            if (ev.status === 'Aprovado') approved++
+            if (ev.status === 'Reprovado') reproved++
+            if (ev.nota !== undefined) {
+              sumGrades += ev.nota
+              gradedCount++
+            }
+          })
+        }
+
+        const averageGrade = gradedCount > 0 ? (sumGrades / gradedCount).toFixed(1) : 'N/A'
+
+        return {
+          id: c.id,
+          title: c.title,
+          startDate: c.startDate,
+          totalParticipants,
+          approved,
+          reproved,
+          averageGrade,
+        }
+      })
+      .sort((a, b) => b.startDate.localeCompare(a.startDate))
+  }
 
   // Status computation for "Cursos Marcados"
   const getCourseStatus = (course: Course) => {
@@ -709,6 +801,23 @@ export default function CursosPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground">Instrutor Responsável *</label>
+                  <select
+                    required
+                    value={editInstructorId}
+                    onChange={(e) => setEditInstructorId(e.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3.5 py-2.5 text-sm outline-none focus:border-foreground"
+                  >
+                    <option value="">Selecione o Instrutor...</option>
+                    {activeInstructorsList.map((inst) => (
+                      <option key={inst.id} value={inst.id}>
+                        {inst.qra || inst.username} ({inst.patente || 'Oficial'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="mt-6 flex justify-end gap-3 border-t border-border/60 pt-4">
                   <button
                     type="button"
@@ -810,7 +919,7 @@ export default function CursosPage() {
                                 {course.title}
                               </h3>
 
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3.5 w-3.5" />
                                   Início: {formatDateTime(course.startDate)}
@@ -823,6 +932,12 @@ export default function CursosPage() {
                                   <Users className="h-3.5 w-3.5" />
                                   {totalSubscribed} / {course.vagasLimit} vagas
                                 </span>
+                                {course.instructorQra && (
+                                  <span className="flex items-center gap-1 rounded bg-secondary/45 px-1.5 py-0.5 text-foreground/90 font-medium">
+                                    <UserCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                                    Instrutor: {course.instructorQra}
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -1004,6 +1119,12 @@ export default function CursosPage() {
                                 <span>Início: {formatDateTime(course.startDate)}</span>
                                 <span>Término: {formatDateTime(course.endDate)}</span>
                                 <span>{totalSubscribed} participantes</span>
+                                {course.instructorQra && (
+                                  <span className="inline-flex items-center gap-1 font-semibold text-foreground/80 bg-secondary/40 rounded px-1.5 py-0.5">
+                                    <UserCheck className="h-3 w-3" />
+                                    Instrutor: {course.instructorQra}
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -1123,10 +1244,10 @@ export default function CursosPage() {
               </div>
 
               {/* Sidebar Navigation Tabs */}
-              <div className="flex bg-secondary/50 p-1 rounded-lg text-xs gap-1">
+              <div className="flex bg-secondary/50 p-1 rounded-lg text-xs gap-1 flex-wrap">
                 <button
                   onClick={() => setSidebarTab('stats')}
-                  className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+                  className={`flex-1 min-w-[70px] py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
                     sidebarTab === 'stats'
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
@@ -1137,7 +1258,7 @@ export default function CursosPage() {
                 
                 <button
                   onClick={() => setSidebarTab('evaluations')}
-                  className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer relative flex items-center justify-center gap-1 ${
+                  className={`flex-1 min-w-[70px] py-1.5 rounded-md font-semibold transition-all cursor-pointer relative flex items-center justify-center gap-1 ${
                     sidebarTab === 'evaluations'
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
@@ -1151,13 +1272,24 @@ export default function CursosPage() {
 
                 <button
                   onClick={() => setSidebarTab('officers')}
-                  className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+                  className={`flex-1 min-w-[70px] py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
                     sidebarTab === 'officers'
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  Ficha do Oficial
+                  Ficha Oficial
+                </button>
+
+                <button
+                  onClick={() => setSidebarTab('instructors')}
+                  className={`flex-1 min-w-[70px] py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+                    sidebarTab === 'instructors'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Ficha Instrutor
                 </button>
               </div>
 
@@ -1172,32 +1304,36 @@ export default function CursosPage() {
                       Estatísticas Rápidas
                     </h3>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1">
-                        <span className="block text-[10px] text-muted-foreground uppercase">Cursos Aplicados</span>
-                        <span className="block text-xl font-bold font-mono text-foreground">
-                          {totalCursosFeitos}
-                        </span>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1">
+                          <span className="block text-[10px] text-muted-foreground uppercase">Cursos Aplicados</span>
+                          <span className="block text-xl font-bold font-mono text-foreground">
+                            {totalCursosFeitos}
+                          </span>
+                        </div>
+                        <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1">
+                          <span className="block text-[10px] text-muted-foreground uppercase">Taxa Aprovação</span>
+                          <span className="block text-xl font-bold font-mono text-emerald-400">
+                            {approvalPercentage}%
+                          </span>
+                        </div>
                       </div>
-                      <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1">
-                        <span className="block text-[10px] text-muted-foreground uppercase">Taxa Aprovação</span>
-                        <span className="block text-xl font-bold font-mono text-emerald-400">
-                          {approvalPercentage}%
-                        </span>
-                      </div>
+
+                      {maxSubscribedCourse && (
+                        <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1">
+                          <span className="block text-[10px] text-muted-foreground uppercase">Maior Recorde de Inscritos</span>
+                          <span className="block text-xs font-semibold text-foreground truncate">
+                            {(maxSubscribedCourse as Course).title}
+                          </span>
+                          <span className="block text-[10px] font-mono text-muted-foreground">
+                            {(maxSubscribedCourse as Course).subscribers.length} inscritos
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    {maxSubscribedCourse && (
-                      <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1 text-xs">
-                        <span className="block text-[10px] text-muted-foreground uppercase">Recorde de Inscrições</span>
-                        <span className="font-semibold block text-foreground truncate" title={maxSubscribedCourse.title}>
-                          {maxSubscribedCourse.title}
-                        </span>
-                        <span className="block text-muted-foreground font-mono text-[10px]">
-                          {maxSubscribedCourse.subscribers.length} oficiais inscritos
-                        </span>
-                      </div>
-                    )}
+
                   </div>
 
                   {/* FORM TO PUBLISH NEW COURSE */}
@@ -1286,6 +1422,25 @@ export default function CursosPage() {
                           onChange={(e) => setVagasLimit(e.target.value)}
                           className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Instrutor Responsável *
+                        </label>
+                        <select
+                          required
+                          value={instructorId}
+                          onChange={(e) => setInstructorId(e.target.value)}
+                          className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground"
+                        >
+                          <option value="">Selecione o Instrutor...</option>
+                          {activeInstructorsList.map((inst) => (
+                            <option key={inst.id} value={inst.id}>
+                              {inst.qra || inst.username} ({inst.patente || 'Oficial'})
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       <button
@@ -1593,6 +1748,145 @@ export default function CursosPage() {
                                         Nota: {hist.nota.toFixed(1)}
                                       </span>
                                     )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4 CONTENT: Ficha do Instrutor (Search & Instructor profile) */}
+              {sidebarTab === 'instructors' && (
+                <div className="space-y-6 animate-fade-in">
+                  
+                  {/* SEÇÃO 5: Busca por QRA/Nome do Instrutor */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Search className="h-3.5 w-3.5" />
+                      Ficha do Instrutor (Consulta)
+                    </h3>
+
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Buscar Instrutor por QRA..."
+                        value={instructorsSearchQuery}
+                        onChange={(e) => {
+                          setInstructorsSearchQuery(e.target.value)
+                          if (e.target.value.trim() === '') {
+                            setSelectedInstructorForProfile(null)
+                          }
+                        }}
+                        className="w-full rounded-lg border border-border/80 bg-background/50 pl-8 pr-3 py-2 text-xs outline-none focus:border-foreground"
+                      />
+                    </div>
+
+                    {/* Search Results */}
+                    {instructorsSearchQuery.trim() !== '' && filteredInstructors.length > 0 && (
+                      <div className="rounded-lg border border-border bg-card shadow-sm max-h-36 overflow-y-auto text-xs divide-y divide-border/60">
+                        {filteredInstructors.map(inst => (
+                          <button
+                            key={inst.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedInstructorForProfile(inst)
+                              setInstructorsSearchQuery('') // clear query to hide suggestions
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-secondary/40 transition-colors flex items-center justify-between"
+                          >
+                            <span className="font-bold text-foreground">{inst.qra || inst.username}</span>
+                            <span className="text-[10px] text-muted-foreground font-semibold">{inst.patente || 'Instrutor'}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {instructorsSearchQuery.trim() !== '' && filteredInstructors.length === 0 && (
+                      <p className="text-[11px] text-muted-foreground italic text-center py-1">Nenhum instrutor correspondente encontrado.</p>
+                    )}
+                  </div>
+
+                  {/* DISPLAY SELECTED INSTRUCTOR PROFILE */}
+                  <div className="border-t border-border/60 pt-5 space-y-4">
+                    {!selectedInstructorForProfile ? (
+                      <div className="rounded-lg border border-dashed border-border/50 p-4 text-center bg-secondary/15">
+                        <p className="text-xs text-muted-foreground">
+                          Utilize o campo de busca acima para carregar a ficha acadêmica e histórico de instrução de qualquer instrutor credenciado do APM.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Header card of the Instructor */}
+                        <div className="rounded-lg bg-secondary/30 border border-border/50 p-3 space-y-1 relative">
+                          <button
+                            onClick={() => setSelectedInstructorForProfile(null)}
+                            title="Remover instrutor"
+                            className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                          
+                          <span className="text-[9px] font-bold text-muted-foreground uppercase bg-secondary/80 px-1.5 py-0.5 rounded">
+                            {selectedInstructorForProfile.patente || 'Instrutor credenciado'}
+                          </span>
+                          
+                          <span className="font-bold text-sm text-foreground block mt-1">
+                            {selectedInstructorForProfile.qra || selectedInstructorForProfile.username}
+                          </span>
+                          
+                          <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground pt-1 border-t border-border/20">
+                            <span>Unidade: {selectedInstructorForProfile.unidade_operacional || 'Efetividade'}</span>
+                            <span>Cargo: {Array.isArray(selectedInstructorForProfile.cargo) ? selectedInstructorForProfile.cargo.join(', ') : 'Instrutor'}</span>
+                          </div>
+                        </div>
+
+                        {/* Instructor's course history */}
+                        <div className="space-y-2.5">
+                          <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                            <History className="h-3 w-3" />
+                            Cursos Sob Responsabilidade
+                          </h4>
+
+                          {getInstructorCourseHistory(selectedInstructorForProfile.id).length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic text-center py-2">
+                              Este instrutor ainda não ministrou nenhum curso registrado.
+                            </p>
+                          ) : (
+                            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                              {getInstructorCourseHistory(selectedInstructorForProfile.id).map(hist => (
+                                <div
+                                  key={hist.id}
+                                  className="p-2.5 rounded-lg border border-border/60 bg-background/30 space-y-2 text-xs"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="font-bold text-foreground/90 truncate block max-w-[140px]">{hist.title}</span>
+                                    <span className="shrink-0 text-[10px] text-muted-foreground font-mono">
+                                      {new Date(hist.startDate).toLocaleDateString('pt-BR')}
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-border/20 text-[10px] text-muted-foreground font-medium">
+                                    <div>
+                                      Inscritos: <span className="font-bold text-foreground">{hist.totalParticipants}</span>
+                                    </div>
+                                    <div>
+                                      Média Notas: <span className="font-bold text-foreground">{hist.averageGrade}</span>
+                                    </div>
+                                    <div className="col-span-2 flex items-center gap-2 text-[9px] mt-0.5">
+                                      <span className="inline-flex items-center rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 px-1 font-bold">
+                                        {hist.approved} Aprovados
+                                      </span>
+                                      <span className="inline-flex items-center rounded bg-red-500/10 text-red-400 border border-red-500/25 px-1 font-bold">
+                                        {hist.reproved} Reprovados
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               ))}
