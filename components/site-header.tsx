@@ -10,7 +10,7 @@ export function SiteHeader() {
   const [hoveredAction, setHoveredAction] = useState<string | null>(null)
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/10 bg-background/30 backdrop-blur-md">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/10 bg-card/20 backdrop-blur-md">
       <div className="mx-auto flex h-24 max-w-[1600px] items-center justify-between gap-4 px-6 sm:px-10 lg:px-16">
         <Link href="/" className="flex items-center gap-2.5 group">
           <span className="text-base font-bold tracking-tight text-white transition-colors duration-300 group-hover:text-primary-foreground/90">
