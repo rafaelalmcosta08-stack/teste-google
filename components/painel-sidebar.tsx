@@ -41,8 +41,8 @@ export function PainelSidebar() {
   return (
     <aside
       id="painel-sidebar"
-      className={`fixed bottom-0 left-0 top-0 z-50 flex h-screen flex-col justify-between border-r border-border/30 bg-card/85 py-6 backdrop-blur-xl transition-all duration-300 ease-in-out ${
-        isHovered ? 'w-64 shadow-2xl shadow-black/60' : 'w-[70px]'
+      className={`fixed bottom-0 left-0 top-0 z-50 flex h-screen flex-col justify-between border-r border-border/20 bg-card/30 py-6 backdrop-blur-md transition-all duration-300 ease-in-out ${
+        isHovered ? 'w-64 shadow-2xl shadow-black/40' : 'w-[70px]'
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

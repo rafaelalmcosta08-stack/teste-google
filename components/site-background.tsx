@@ -1,4 +1,8 @@
-export function SiteBackground() {
+interface SiteBackgroundProps {
+  hasSidebar?: boolean
+}
+
+export function SiteBackground({ hasSidebar = false }: SiteBackgroundProps) {
   return (
     <>
       {/* Camada base escura caso a imagem demore a carregar */}
@@ -10,7 +14,9 @@ export function SiteBackground() {
       {/* Imagem de fundo via elemento img real */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 overflow-hidden"
+        className={`pointer-events-none fixed inset-y-0 right-0 overflow-hidden transition-all duration-300 ${
+          hasSidebar ? 'left-[70px]' : 'left-0'
+        }`}
         style={{ zIndex: -10 }}
       >
         <img
@@ -26,3 +32,4 @@ export function SiteBackground() {
     </>
   )
 }
+
