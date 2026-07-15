@@ -328,6 +328,16 @@ export default function HierarquiaPage() {
   const canEditPatente = (targetUser: UserProfile) => {
     if (isSiteAdmin) return true
     if (targetUser.id === myProfile?.id) return false
+    
+    // Se o usuário alvo tiver patente maior ou igual à minha (índice menor ou igual na lista), não posso mexer na patente dele
+    if (myPatente && targetUser.patente) {
+      const myIdx = PATENTES.indexOf(myPatente)
+      const targetIdx = PATENTES.indexOf(targetUser.patente)
+      if (myIdx !== -1 && targetIdx !== -1 && targetIdx <= myIdx) {
+        return false
+      }
+    }
+
     const allowed = getPatenteOptions(myPatente)
     return allowed.length > 0
   }
@@ -510,165 +520,188 @@ export default function HierarquiaPage() {
     return allowed.length > 0
   }
 
-  if (!canViewFullHierarchy) {
-    return (
-      <main className="mx-auto max-w-[1600px] px-6 pb-24 pt-16 sm:px-10 lg:px-16">
-        {/* Cabeçalho */}
-        <div className="mb-12">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
-            <Award className="h-6 w-6 text-foreground" />
-          </div>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Minha Hierarquia</h1>
-          <p className="mt-3 text-muted-foreground">
-            Visualize sua patente, cargos ativos, cursos concluídos e ficha disciplinar.
-          </p>
-        </div>
+  const hasSetPermission = isSiteAdmin || (() => {
+    const allowedPats = getPatenteOptions(myPatente)
+    if (allowedPats.length > 0) return true
 
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando informações...</p>
-        ) : myDetailedProfile ? (
-          <div className="grid gap-8 lg:grid-cols-3">
-            {/* Coluna Principal: Detalhes do Policial */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="rounded-2xl border border-border/60 bg-card/20 p-8 backdrop-blur-md">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-6 mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-xl font-bold text-white">
-                      {myDetailedProfile.username[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold tracking-tight">{myDetailedProfile.username}</h2>
-                      <p className="text-sm text-muted-foreground">QRA: <span className="text-foreground font-semibold">{myDetailedProfile.qra ?? 'Não Definido'}</span></p>
-                    </div>
-                  </div>
-                  <div>
-                    <span className={`inline-flex rounded-full border px-4 py-1 text-sm font-semibold ${getPatenteColorClass(myDetailedProfile.patente)}`}>
-                      {myDetailedProfile.patente ?? 'Recruta'}
-                    </span>
-                  </div>
-                </div>
+    const hasCargoPermission = myCargos.some((c) => {
+      const allowed = CARGO_PERMISSIONS[c]
+      return allowed && allowed.length > 0
+    })
+    if (hasCargoPermission) return true
 
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Unidade Administrativa</h3>
-                    <div className="rounded-lg border border-border/40 bg-secondary/20 px-3 py-2 text-sm font-medium">
-                      {myDetailedProfile.unidade_administrativa || 'Sem Efetividade'}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Unidade Operacional</h3>
-                    <div className="rounded-lg border border-border/40 bg-secondary/20 px-3 py-2 text-sm font-medium">
-                      {myDetailedProfile.unidade_operacional || 'Sem Efetividade'}
-                    </div>
-                  </div>
+    const allowedUAs = getAllowedUnidadesAdministrativas(myCargos, false)
+    if (allowedUAs.length > 0) return true
 
-                  <div className="sm:col-span-2">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Cargo(s) Ativo(s)</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {myDetailedProfile.cargo && myDetailedProfile.cargo.length > 0 ? (
-                        myDetailedProfile.cargo.map((c) => (
-                          <span key={c} className="rounded-full border border-border/60 bg-secondary/40 px-3 py-1 text-xs font-medium text-foreground">
-                            {c}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Sem Efetividade</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+    const allowedUOs = getAllowedUnidadesOperacionais(myCargos, false)
+    if (allowedUOs.length > 0) return true
 
-              {/* Seção de Cursos */}
-              <div className="rounded-2xl border border-border/60 bg-card/20 p-8 backdrop-blur-md">
-                <div className="flex items-center gap-2 mb-6">
-                  <Award className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-bold">Cursos e Especializações</h3>
-                </div>
-                {myDetailedProfile.cursos && myDetailedProfile.cursos.length > 0 ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {myDetailedProfile.cursos.map((curso) => (
-                      <div key={curso} className="flex items-center gap-2.5 rounded-lg border border-border/40 bg-secondary/10 px-3.5 py-3 text-sm font-medium">
-                        <Check className="h-4 w-4 shrink-0 text-green-400" />
-                        <span>{curso}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhum curso registrado até o momento.</p>
-                )}
-              </div>
-            </div>
+    const allowedCursos = getAllowedCursos(myCargos, false)
+    if (allowedCursos.length > 0) return true
 
-            {/* Sidebar Lateral: Atividade & Advertências */}
-            <div className="space-y-6">
-              {/* Status de Atividade */}
-              <div className="rounded-2xl border border-border/60 bg-card/20 p-6 backdrop-blur-md">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Status de Atividade</h3>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-2.5 w-2.5 rounded-full ${myDetailedProfile.status_atividade === 'Inativo' ? 'bg-zinc-500' : 'bg-green-400 animate-pulse'}`} />
-                    <span className="font-semibold text-foreground">{myDetailedProfile.status_atividade ?? 'Ativo'}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">Regra de 15 dias ativa</span>
-                </div>
-                <div className="mt-4 border-t border-border/40 pt-4 space-y-2 text-xs text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>Último Login:</span>
-                    <span className="text-foreground font-medium">
-                      {myDetailedProfile.last_login_at
-                        ? new Date(myDetailedProfile.last_login_at).toLocaleDateString('pt-BR')
-                        : 'Hoje (Sem registro histórico)'}
-                    </span>
-                  </div>
-                </div>
-              </div>
+    const allowedAdvs = getAllowedAdvertencias(myCargos, false)
+    if (allowedAdvs.length > 0) return true
 
-              {/* Ficha Disciplinar (Advertências) */}
-              <div className="rounded-2xl border border-border/60 bg-card/20 p-6 backdrop-blur-md">
-                <div className="flex items-center gap-2 mb-4">
-                  <AlertOctagon className="h-5 w-5 text-red-400" />
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Ficha Disciplinar</h3>
-                </div>
-                {myDetailedProfile.advertencia && myDetailedProfile.advertencia.length > 0 ? (
-                  <div className="space-y-2">
-                    {myDetailedProfile.advertencia.map((adv) => (
-                      <div key={adv} className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs font-semibold text-red-400">
-                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                        <span>{adv}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/5 px-3 py-3 text-xs font-semibold text-green-400">
-                    <Check className="h-3.5 w-3.5 shrink-0" />
-                    <span>Ficha totalmente limpa</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Perfil não encontrado.</p>
-        )}
-      </main>
-    )
-  }
+    return false
+  })()
 
   const activeUser = users.find((u) => u.id === activeDropdown?.userId)
 
   return (
     <main className="mx-auto max-w-[1600px] px-6 pb-24 pt-16 sm:px-10 lg:px-16">
-      {/* Cabeçalho */}
+      {/* 1. SEÇÃO MINHA HIERARQUIA (Visível para todos) */}
       <div className="mb-12">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
           <Award className="h-6 w-6 text-foreground" />
         </div>
-        <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Hierarquia Policial</h1>
+        <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">Minha Hierarquia</h1>
         <p className="mt-3 text-muted-foreground">
-          Gerencie patentes, cargos, unidades administrativas/operacionais, cursos e advertências dos policiais ativos.
+          Visualize sua patente, cargos ativos, cursos concluídos e ficha disciplinar.
         </p>
       </div>
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground mb-8">Carregando informações...</p>
+      ) : myDetailedProfile ? (
+        <div className="grid gap-8 lg:grid-cols-3 mb-16">
+          {/* Coluna Principal: Detalhes do Policial */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-2xl border border-border/60 bg-card/20 p-8 backdrop-blur-md">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 pb-6 mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-xl font-bold text-white">
+                    {myDetailedProfile.username[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">{myDetailedProfile.username}</h2>
+                    <p className="text-sm text-muted-foreground">QRA: <span className="text-foreground font-semibold">{myDetailedProfile.qra ?? 'Não Definido'}</span></p>
+                  </div>
+                </div>
+                <div>
+                  <span className={`inline-flex rounded-full border px-4 py-1 text-sm font-semibold ${getPatenteColorClass(myDetailedProfile.patente)}`}>
+                    {myDetailedProfile.patente ?? 'Recruta'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Unidade Administrativa</h3>
+                  <div className="rounded-lg border border-border/40 bg-secondary/20 px-3 py-2 text-sm font-medium">
+                    {myDetailedProfile.unidade_administrativa || 'Sem Efetividade'}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Unidade Operacional</h3>
+                  <div className="rounded-lg border border-border/40 bg-secondary/20 px-3 py-2 text-sm font-medium">
+                    {myDetailedProfile.unidade_operacional || 'Sem Efetividade'}
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Cargo(s) Ativo(s)</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {myDetailedProfile.cargo && myDetailedProfile.cargo.length > 0 ? (
+                      myDetailedProfile.cargo.map((c) => (
+                        <span key={c} className="rounded-full border border-border/60 bg-secondary/40 px-3 py-1 text-xs font-medium text-foreground">
+                          {c}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Sem Efetividade</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Seção de Cursos */}
+            <div className="rounded-2xl border border-border/60 bg-card/20 p-8 backdrop-blur-md">
+              <div className="flex items-center gap-2 mb-6">
+                <Award className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold">Cursos e Especializações</h3>
+              </div>
+              {myDetailedProfile.cursos && myDetailedProfile.cursos.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {myDetailedProfile.cursos.map((curso) => (
+                    <div key={curso} className="flex items-center gap-2.5 rounded-lg border border-border/40 bg-secondary/10 px-3.5 py-3 text-sm font-medium">
+                      <Check className="h-4 w-4 shrink-0 text-green-400" />
+                      <span>{curso}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum curso registrado até o momento.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Sidebar Lateral: Atividade & Ficha Disciplinar */}
+          <div className="space-y-6">
+            {/* Status de Atividade */}
+            <div className="rounded-2xl border border-border/60 bg-card/20 p-6 backdrop-blur-md">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Status de Atividade</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${myDetailedProfile.status_atividade === 'Inativo' ? 'bg-zinc-500' : 'bg-green-400 animate-pulse'}`} />
+                  <span className="font-semibold text-foreground">{myDetailedProfile.status_atividade ?? 'Ativo'}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">Regra de 15 dias ativa</span>
+              </div>
+              <div className="mt-4 border-t border-border/40 pt-4 space-y-2 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Último Login:</span>
+                  <span className="text-foreground font-medium">
+                    {myDetailedProfile.last_login_at
+                      ? new Date(myDetailedProfile.last_login_at).toLocaleDateString('pt-BR')
+                      : 'Hoje (Sem registro histórico)'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ficha Disciplinar */}
+            <div className="rounded-2xl border border-border/60 bg-card/20 p-6 backdrop-blur-md">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertOctagon className="h-5 w-5 text-red-400" />
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Ficha Disciplinar</h3>
+              </div>
+              {myDetailedProfile.advertencia && myDetailedProfile.advertencia.length > 0 ? (
+                <div className="space-y-2">
+                  {myDetailedProfile.advertencia.map((adv) => (
+                    <div key={adv} className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs font-semibold text-red-400">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      <span>{adv}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/5 px-3 py-3 text-xs font-semibold text-green-400">
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                  <span>Ficha totalmente limpa</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground mb-16">Perfil não encontrado.</p>
+      )}
+
+      {/* 2. SEÇÃO DE GESTÃO DA HIERARQUIA POLICIAL (Apenas para quem tem permissão para setar) */}
+      {hasSetPermission && (
+        <>
+          <hr className="my-16 border-border/20" />
+
+          <div className="mb-12">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+              <Shield className="h-6 w-6 text-foreground" />
+            </div>
+            <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">Hierarquia Policial</h2>
+            <p className="mt-3 text-muted-foreground">
+              Gerencie patentes, cargos, unidades administrativas/operacionais, cursos e advertências dos policiais ativos.
+            </p>
+          </div>
 
       {/* Barra de Filtros */}
       <div className="mb-6 flex max-w-md items-center gap-3">
@@ -927,6 +960,8 @@ export default function HierarquiaPage() {
             </table>
           </div>
         </div>
+      )}
+        </>
       )}
 
       {/* Dynamic Floating Dropdown Overlay */}

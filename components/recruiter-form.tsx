@@ -22,6 +22,16 @@ const PATENTES = [
   'Recruta',
 ]
 
+const CADASTRO_PATENTES = [
+  'Sub Tenente',
+  '1º Sargento',
+  '2º Sargento',
+  '3º Sargento',
+  'Cabo',
+  'Soldado',
+  'Recruta',
+]
+
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
 export function RecruiterForm() {
@@ -131,7 +141,7 @@ export function RecruiterForm() {
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border-border/60 text-foreground"
             required
           >
-            {PATENTES.map((pat) => (
+            {CADASTRO_PATENTES.map((pat) => (
               <option key={pat} value={pat} className="bg-popover text-foreground">
                 {pat}
               </option>
