@@ -494,23 +494,15 @@ export default function HierarquiaPage() {
     if (siteAdmin) return UNIDADES_ADMINISTRATIVAS
     if (!promoterCargos || promoterCargos.length === 0) return []
 
-    const allowed = new Set<string>()
     if (promoterCargos.includes('Alto Comando')) {
       return UNIDADES_ADMINISTRATIVAS
     }
-    if (promoterCargos.includes('Diretor Corregedoria')) {
-      allowed.add('Corregedoria')
-    }
-    if (promoterCargos.includes('Diretor APM') || promoterCargos.includes('Supervisor APM')) {
-      allowed.add('APM')
-    }
-    return Array.from(allowed)
+    return []
   }
 
   const canEditUnidadeAdministrativa = (targetUser: UserProfile) => {
     if (isSiteAdmin) return true
-    const allowed = getAllowedUnidadesAdministrativas(myCargos, false)
-    return allowed.length > 0
+    return myCargos.includes('Alto Comando')
   }
 
   // 4. Unidade Operacional Helper
@@ -518,32 +510,15 @@ export default function HierarquiaPage() {
     if (siteAdmin) return UNIDADES_OPERACIONAIS
     if (!promoterCargos || promoterCargos.length === 0) return []
 
-    const allowed = new Set<string>()
     if (promoterCargos.includes('Alto Comando')) {
       return UNIDADES_OPERACIONAIS
     }
-    if (promoterCargos.includes('Comando Bope')) {
-      allowed.add('BOPE')
-    }
-    if (promoterCargos.includes('Comando Core')) {
-      allowed.add('CORE')
-    }
-    if (promoterCargos.includes('Comando GAEP')) {
-      allowed.add('GAEP')
-    }
-    if (promoterCargos.includes('Comando GAR')) {
-      allowed.add('GAR')
-    }
-    if (promoterCargos.includes('Comando GTM')) {
-      allowed.add('GTM')
-    }
-    return Array.from(allowed)
+    return []
   }
 
   const canEditUnidadeOperacional = (targetUser: UserProfile) => {
     if (isSiteAdmin) return true
-    const allowed = getAllowedUnidadesOperacionais(myCargos, false)
-    return allowed.length > 0
+    return myCargos.includes('Alto Comando')
   }
 
   // 5. Status Helper

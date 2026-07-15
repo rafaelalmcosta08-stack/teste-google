@@ -405,41 +405,18 @@ function getAllowedCargos(promoterCargos: string[] | undefined) {
 
 function getAllowedUnidadesAdministrativas(promoterCargos: string[] | undefined) {
   if (!promoterCargos || promoterCargos.length === 0) return []
-  const allowed = new Set<string>()
   if (promoterCargos.includes('Alto Comando')) {
     return ['Corregedoria', 'APM', 'Sem Efetividade']
   }
-  if (promoterCargos.includes('Diretor Corregedoria')) {
-    allowed.add('Corregedoria')
-  }
-  if (promoterCargos.includes('Diretor APM') || promoterCargos.includes('Supervisor APM')) {
-    allowed.add('APM')
-  }
-  return Array.from(allowed)
+  return []
 }
 
 function getAllowedUnidadesOperacionais(promoterCargos: string[] | undefined) {
   if (!promoterCargos || promoterCargos.length === 0) return []
-  const allowed = new Set<string>()
   if (promoterCargos.includes('Alto Comando')) {
     return ['GAEP', 'GTM', 'GAR', 'BOPE', 'CORE', 'Sem Efetividade']
   }
-  if (promoterCargos.includes('Comando Bope')) {
-    allowed.add('BOPE')
-  }
-  if (promoterCargos.includes('Comando Core')) {
-    allowed.add('CORE')
-  }
-  if (promoterCargos.includes('Comando GAEP')) {
-    allowed.add('GAEP')
-  }
-  if (promoterCargos.includes('Comando GAR')) {
-    allowed.add('GAR')
-  }
-  if (promoterCargos.includes('Comando GTM')) {
-    allowed.add('GTM')
-  }
-  return Array.from(allowed)
+  return []
 }
 
 function canEditCursos(promoterCargos: string[] | undefined) {
