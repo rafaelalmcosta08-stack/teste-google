@@ -86,3 +86,20 @@ export function notifyUser(userId: string, event: string, payload: any) {
     }
   }
 }
+
+// Helper to broadcast events to all connected users
+export function broadcastEvent(event: string, payload: any) {
+  if (!globalThis.sseClients) return
+  const dataStr = JSON.stringify({ event, payload })
+  const msg = `data: ${dataStr}\n\n`
+  const encoded = new TextEncoder().encode(msg)
+
+  for (const client of globalThis.sseClients) {
+    try {
+      client.controller.enqueue(encoded)
+    } catch (err) {
+      console.error('Failed to send SSE to client during broadcast', client.id, err)
+      globalThis.sseClients.delete(client)
+    }
+  }
+}

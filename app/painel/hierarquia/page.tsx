@@ -215,6 +215,53 @@ export default function HierarquiaPage() {
     setDropdownCoords(null)
   }, [myProfile])
 
+  // Sincronização em tempo real de alterações de patentes, cargos e permissões de outros usuários
+  useEffect(() => {
+    const handleRealtimeEvent = (e: Event) => {
+      const { detail } = e as CustomEvent
+      if (!detail) return
+
+      const { event, payload } = detail
+      if (event === 'permissions-updated' && payload) {
+        setUsers((prevUsers) =>
+          prevUsers.map((u) => {
+            if (u.id === payload.id) {
+              return {
+                ...u,
+                role: payload.role ?? u.role,
+                patente: payload.patente ?? u.patente,
+                cargo: payload.cargo ?? u.cargo,
+                unidade_administrativa: payload.unidade_administrativa ?? u.unidade_administrativa,
+                unidade_operacional: payload.unidade_operacional ?? u.unidade_operacional,
+                status_atividade: payload.status_atividade ?? u.status_atividade,
+                cursos: payload.cursos ?? u.cursos,
+                advertencia: payload.advertencia ?? u.advertencia,
+              }
+            }
+            return u
+          })
+        )
+      } else if (event === 'access-revoked' && payload) {
+        setUsers((prevUsers) =>
+          prevUsers.map((u) => {
+            if (u.id === payload.id) {
+              return {
+                ...u,
+                status: 'rejeitado',
+              }
+            }
+            return u
+          })
+        )
+      }
+    }
+
+    window.addEventListener('sse-event', handleRealtimeEvent)
+    return () => {
+      window.removeEventListener('sse-event', handleRealtimeEvent)
+    }
+  }, [])
+
   // Salva alteração de campo no servidor
   const saveUserField = async (userId: string, fields: Partial<UserProfile>) => {
     setSavingId(userId)

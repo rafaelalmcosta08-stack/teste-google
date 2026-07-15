@@ -259,13 +259,13 @@ export async function PATCH(req: NextRequest) {
 
   // 3. Notificação instantânea via Server-Sent Events (SSE)
   try {
-    const { notifyUser } = await import('@/app/api/events/route')
+    const { broadcastEvent } = await import('@/app/api/events/route')
     if (status !== undefined && status !== 'aprovado') {
       // Usuário teve acesso revogado (status rejeitado ou pendente)
-      notifyUser(id, 'access-revoked', {})
+      broadcastEvent('access-revoked', { id })
     } else {
       // Usuário teve dados de cargo/patente/permissão alterados
-      notifyUser(id, 'permissions-updated', {
+      broadcastEvent('permissions-updated', {
         id,
         role: novoMeta.role,
         patente: novoMeta.patente,

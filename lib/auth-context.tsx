@@ -92,19 +92,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
+        
+        // Dispatch custom browser event for any incoming real-time updates
+        if (data.event) {
+          window.dispatchEvent(new CustomEvent('sse-event', { detail: data }))
+        }
+
         if (data.event === 'access-revoked') {
-          console.warn('Acesso ao painel revogado pelo administrador.')
-          logout()
-          window.location.href = '/login'
+          if (data.payload?.id === user.id) {
+            console.warn('Acesso ao painel revogado pelo administrador.')
+            logout()
+            window.location.href = '/login'
+          }
         } else if (data.event === 'permissions-updated') {
-          console.log('Permissões atualizadas em tempo real:', data.payload)
-          setProfile((prev) => {
-            if (!prev) return null
-            return {
-              ...prev,
-              ...data.payload,
-            }
-          })
+          if (data.payload?.id === user.id) {
+            console.log('Suas permissões foram atualizadas em tempo real:', data.payload)
+            setProfile((prev) => {
+              if (!prev) return null
+              return {
+                ...prev,
+                ...data.payload,
+              }
+            })
+          }
         }
       } catch (err) {
         console.error('Erro ao processar evento SSE de tempo real:', err)

@@ -49,6 +49,53 @@ export default function AdministracaoPage() {
     else if (myProfile?.role !== 'admin') setLoading(false)
   }, [myProfile, session?.access_token, fetchProfiles])
 
+  // Sincronização em tempo real para a página de administração
+  useEffect(() => {
+    const handleRealtimeEvent = (e: Event) => {
+      const { detail } = e as CustomEvent
+      if (!detail) return
+
+      const { event, payload } = detail
+      if (event === 'permissions-updated' && payload) {
+        setProfiles((prevProfiles) =>
+          prevProfiles.map((p) => {
+            if (p.id === payload.id) {
+              return {
+                ...p,
+                role: payload.role ?? p.role,
+                patente: payload.patente ?? p.patente,
+                cargo: payload.cargo ?? p.cargo,
+                unidade_administrativa: payload.unidade_administrativa ?? p.unidade_administrativa,
+                unidade_operacional: payload.unidade_operacional ?? p.unidade_operacional,
+                status_atividade: payload.status_atividade ?? p.status_atividade,
+                cursos: payload.cursos ?? p.cursos,
+                advertencia: payload.advertencia ?? p.advertencia,
+              }
+            }
+            return p
+          })
+        )
+      } else if (event === 'access-revoked' && payload) {
+        setProfiles((prevProfiles) =>
+          prevProfiles.map((p) => {
+            if (p.id === payload.id) {
+              return {
+                ...p,
+                status: 'rejeitado',
+              }
+            }
+            return p
+          })
+        )
+      }
+    }
+
+    window.addEventListener('sse-event', handleRealtimeEvent)
+    return () => {
+      window.removeEventListener('sse-event', handleRealtimeEvent)
+    }
+  }, [])
+
   async function atualizarStatus(id: string, novoStatus: 'aprovado' | 'rejeitado') {
     setAtualizando(id)
     try {
