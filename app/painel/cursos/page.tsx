@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { motion, AnimatePresence } from 'motion/react'
 import {
@@ -20,6 +20,16 @@ import {
   BookmarkCheck,
   ChevronDown,
   ChevronUp,
+  Search,
+  Award,
+  Check,
+  Percent,
+  TrendingUp,
+  UserCheck,
+  BookOpen,
+  ClipboardList,
+  ChevronRight,
+  History,
 } from 'lucide-react'
 
 // Course Interface
@@ -40,6 +50,12 @@ interface Course {
     subscribedAt: string
   }>
   readBy: string[]
+  evaluations?: Record<string, {
+    status: 'Aprovado' | 'Reprovado'
+    nota: number
+    evaluatedBy: string
+    evaluatedAt: string
+  }>
 }
 
 export default function CursosPage() {
@@ -70,6 +86,18 @@ export default function CursosPage() {
 
   // Current Brasília Time tracking state to keep status badges updated dynamically
   const [brasiliaTime, setBrasiliaTime] = useState<string>('')
+
+  // --- NEW STATES FOR CUSTOM SIDEBAR ---
+  const [sidebarTab, setSidebarTab] = useState<'stats' | 'evaluations' | 'officers'>('stats')
+  const [selectedCourseForEvaluation, setSelectedCourseForEvaluation] = useState<Course | null>(null)
+  const [evaluationInputs, setEvaluationInputs] = useState<Record<string, { status: 'Aprovado' | 'Reprovado' | ''; nota: string }>>({})
+  const [officersList, setOfficersList] = useState<any[]>([])
+  const [officersLoading, setOfficersLoading] = useState(false)
+  const [officersSearchQuery, setOfficersSearchQuery] = useState('')
+  const [selectedOfficerForProfile, setSelectedOfficerForProfile] = useState<any | null>(null)
+  const [evaluationStatusText, setEvaluationStatusText] = useState<Record<string, string>>({}) // userId -> status message
+
+  const sidebarRef = useRef<HTMLDivElement>(null)
 
   // Check Permissions
   const myCargos = profile?.cargo ?? []
@@ -134,6 +162,27 @@ export default function CursosPage() {
     }
   }
 
+  // Fetch all user profiles for "Ficha do Oficial"
+  const fetchOfficers = async () => {
+    if (!isAuthorizedToPublish || !session?.access_token) return
+    setOfficersLoading(true)
+    try {
+      const res = await fetch('/api/admin/usuarios', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setOfficersList(data.usuarios || [])
+      }
+    } catch (err) {
+      console.error('Falha ao carregar oficiais:', err)
+    } finally {
+      setOfficersLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchCourses()
 
@@ -150,6 +199,31 @@ export default function CursosPage() {
       window.removeEventListener('sse-event', handleRealtimeEvent)
     }
   }, [])
+
+  // Load officers only if authorized
+  useEffect(() => {
+    if (isAuthorizedToPublish && session?.access_token) {
+      fetchOfficers()
+    }
+  }, [isAuthorizedToPublish, session?.access_token])
+
+  // Synchronize evaluation inputs when selectedCourseForEvaluation or courses list changes
+  useEffect(() => {
+    if (selectedCourseForEvaluation) {
+      const latestCourse = courses.find(c => c.id === selectedCourseForEvaluation.id)
+      if (latestCourse) {
+        const inputs: Record<string, { status: 'Aprovado' | 'Reprovado' | ''; nota: string }> = {}
+        latestCourse.subscribers.forEach(sub => {
+          const saved = latestCourse.evaluations?.[sub.userId]
+          inputs[sub.userId] = {
+            status: saved?.status ?? '',
+            nota: saved?.nota !== undefined ? saved.nota.toString() : '',
+          }
+        })
+        setEvaluationInputs(inputs)
+      }
+    }
+  }, [selectedCourseForEvaluation, courses])
 
   // Publish a new Course
   const handlePublish = async (e: React.FormEvent) => {
@@ -362,12 +436,143 @@ export default function CursosPage() {
     setEditVagasLimit(course.vagasLimit.toString())
   }
 
+  // Save an individual subscriber evaluation
+  const handleSaveEvaluation = async (courseId: string, userId: string) => {
+    const input = evaluationInputs[userId]
+    if (!input || !input.status || input.nota.trim() === '') {
+      alert('Selecione o Status (Aprovado/Reprovado) e defina a Nota (0 a 10) para salvar.')
+      return
+    }
+
+    const grade = parseFloat(input.nota.replace(',', '.'))
+    if (isNaN(grade) || grade < 0 || grade > 10) {
+      alert('A nota deve ser um número válido de 0 a 10.')
+      return
+    }
+
+    setEvaluationStatusText(prev => ({ ...prev, [userId]: 'Salvando...' }))
+
+    try {
+      const res = await fetch('/api/cursos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          action: 'evaluate-subscriber',
+          id: courseId,
+          userId,
+          status: input.status,
+          nota: grade,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Falha ao salvar avaliação.')
+
+      setEvaluationStatusText(prev => ({ ...prev, [userId]: 'Salvo!' }))
+      fetchCourses()
+
+      // Automatically fetch updated list of officers to maintain profile alignment
+      fetchOfficers()
+
+      setTimeout(() => {
+        setEvaluationStatusText(prev => {
+          const next = { ...prev }
+          delete next[userId]
+          return next
+        })
+      }, 3000)
+    } catch (err: any) {
+      setEvaluationStatusText(prev => ({ ...prev, [userId]: `Erro: ${err.message}` }))
+    }
+  }
+
   // Split courses into Cursos Marcados and Cursos Feitos
   // Marcados: endTime is in the future
   // Feitos: endTime is in the past
   const currentT = brasiliaTime || getBrasiliaTimeStr()
   const cursosMarcados = courses.filter(c => c.endDate >= currentT)
   const cursosFeitos = courses.filter(c => c.endDate < currentT)
+
+  // Calculate dynamic stats
+  const totalCursosFeitos = cursosFeitos.length
+
+  let totalEvaluatedCount = 0
+  let approvedCount = 0
+  courses.forEach(c => {
+    if (c.evaluations) {
+      Object.values(c.evaluations).forEach(ev => {
+        if (ev.status && ev.nota !== undefined) {
+          totalEvaluatedCount++
+          if (ev.status === 'Aprovado') {
+            approvedCount++
+          }
+        }
+      })
+    }
+  })
+  const approvalPercentage = totalEvaluatedCount > 0 ? Math.round((approvedCount / totalEvaluatedCount) * 100) : 0
+
+  let maxSubscribedCourse: Course | null = null
+  courses.forEach(c => {
+    if (!maxSubscribedCourse || c.subscribers.length > maxSubscribedCourse.subscribers.length) {
+      maxSubscribedCourse = c
+    }
+  })
+
+  // Check if a finished course has pending evaluations
+  const getPendingCount = (course: Course) => {
+    if (course.subscribers.length === 0) return 0
+    let pending = 0
+    course.subscribers.forEach(sub => {
+      const evalData = course.evaluations?.[sub.userId]
+      const isComplete = evalData && evalData.status && evalData.nota !== undefined
+      if (!isComplete) {
+        pending++
+      }
+    })
+    return pending
+  }
+
+  const cursosPendentes = cursosFeitos.filter(c => getPendingCount(c) > 0)
+
+  // Setup evaluation panel from a course click
+  const triggerEvaluationForCourse = (course: Course) => {
+    setSelectedCourseForEvaluation(course)
+    setSidebarTab('evaluations')
+    // Scroll sidebar into view smoothly on mobile
+    if (sidebarRef.current) {
+      sidebarRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  // Get course history for selected officer
+  const getOfficerCourseHistory = (officerId: string) => {
+    return courses
+      .filter(c => c.subscribers.some(sub => sub.userId === officerId))
+      .map(c => {
+        const evalData = c.evaluations?.[officerId]
+        return {
+          id: c.id,
+          title: c.title,
+          startDate: c.startDate,
+          status: evalData?.status ?? null,
+          nota: evalData?.nota ?? null,
+          evaluatedBy: evalData?.evaluatedBy ?? null,
+        }
+      })
+      .sort((a, b) => b.startDate.localeCompare(a.startDate))
+  }
+
+  // Search filtered officers
+  const filteredOfficers = officersSearchQuery.trim() === ''
+    ? []
+    : officersList.filter(o =>
+        (o.qra || '').toLowerCase().includes(officersSearchQuery.toLowerCase()) ||
+        (o.username || '').toLowerCase().includes(officersSearchQuery.toLowerCase())
+      )
 
   // Status computation for "Cursos Marcados"
   const getCourseStatus = (course: Course) => {
@@ -526,10 +731,11 @@ export default function CursosPage() {
         )}
       </AnimatePresence>
 
-      {/* Split Screen Grid */}
+      {/* Split Screen Grid (Adapts automatically based on permissions) */}
       <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-3">
+        
         {/* Left Column: Course Announcements Mural */}
-        <div className={`space-y-12 lg:col-span-2`}>
+        <div className={`space-y-12 ${isAuthorizedToPublish ? 'lg:col-span-2' : 'lg:col-span-3 max-w-4xl mx-auto w-full'}`}>
           {loading ? (
             <div className="rounded-xl border border-border/60 bg-card/60 p-12 text-center backdrop-blur-sm">
               <p className="text-sm text-muted-foreground">Buscando cursos do servidor...</p>
@@ -763,7 +969,7 @@ export default function CursosPage() {
                       const isExpanded = expandedIds.has(course.id)
                       const isSubscribed = user && course.subscribers.some((s) => s.userId === user.id)
                       const totalSubscribed = course.subscribers.length
-                      const userHasRead = user && course.readBy.includes(user.id)
+                      const pendingEvals = getPendingCount(course)
 
                       return (
                         <div
@@ -781,6 +987,13 @@ export default function CursosPage() {
                                     Participou
                                   </span>
                                 )}
+
+                                {/* Admin Pending Eval warning badge */}
+                                {isAuthorizedToPublish && pendingEvals > 0 && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-medium text-amber-400 animate-pulse">
+                                    {pendingEvals} pendente{pendingEvals > 1 ? 's' : ''}
+                                  </span>
+                                )}
                               </div>
 
                               <h3 className="text-base font-bold text-muted-foreground">
@@ -794,12 +1007,25 @@ export default function CursosPage() {
                               </div>
                             </div>
 
-                            <button
-                              onClick={() => handleToggleExpand(course)}
-                              className="rounded-lg bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all cursor-pointer sm:self-start"
-                            >
-                              {isExpanded ? 'Recolher' : 'Visualizar'}
-                            </button>
+                            <div className="flex items-center gap-2 sm:self-start">
+                              {/* Evaluation Action trigger for Admins */}
+                              {isAuthorizedToPublish && course.subscribers.length > 0 && (
+                                <button
+                                  onClick={() => triggerEvaluationForCourse(course)}
+                                  className="rounded-lg bg-foreground text-background hover:bg-foreground/90 px-3 py-1 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                  <Award className="h-3 w-3" />
+                                  Avaliar Inscritos
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() => handleToggleExpand(course)}
+                                className="rounded-lg bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all cursor-pointer"
+                              >
+                                {isExpanded ? 'Recolher' : 'Visualizar'}
+                              </button>
+                            </div>
                           </div>
 
                           <AnimatePresence>
@@ -825,15 +1051,40 @@ export default function CursosPage() {
                                     {course.subscribers.length === 0 ? (
                                       <p className="italic text-muted-foreground/60">Sem inscrições gravadas para este curso.</p>
                                     ) : (
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {course.subscribers.map((subscriber) => (
-                                          <span
-                                            key={subscriber.userId}
-                                            className="rounded bg-card border border-border/60 px-2 py-0.5 font-medium text-muted-foreground"
-                                          >
-                                            {subscriber.qra}
-                                          </span>
-                                        ))}
+                                      <div className="space-y-2 mt-2">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                          {course.subscribers.map((subscriber) => {
+                                            const evaluation = course.evaluations?.[subscriber.userId]
+                                            return (
+                                              <div
+                                                key={subscriber.userId}
+                                                className="flex items-center justify-between rounded border border-border/40 bg-card p-2 text-xs"
+                                              >
+                                                <span className="font-semibold text-foreground/95">
+                                                  {subscriber.qra}
+                                                </span>
+                                                {evaluation ? (
+                                                  <div className="flex items-center gap-1.5">
+                                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                                      evaluation.status === 'Aprovado'
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                                    }`}>
+                                                      {evaluation.status}
+                                                    </span>
+                                                    <span className="font-mono text-[11px] font-bold bg-secondary px-1.5 py-0.5 rounded text-foreground">
+                                                      Nota: {evaluation.nota.toFixed(1)}
+                                                    </span>
+                                                  </div>
+                                                ) : (
+                                                  <span className="text-[10px] text-amber-500/90 font-medium">
+                                                    Pendente de Avaliação
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
                                       </div>
                                     )}
                                   </div>
@@ -855,105 +1106,510 @@ export default function CursosPage() {
           )}
         </div>
 
-        {/* Right Column: Publication Form (APM Directors / Supervisors / Alto Comando) */}
+        {/* --- CUSTOM RIGHT SIDEBAR (EXCLUSIVA DE CAPACITAÇÃO & CURSOS) --- */}
+        {/* Visible only for Diretor APM, Supervisor APM, Alto Comando */}
         {isAuthorizedToPublish && (
-          <div className="lg:col-span-1">
-            <div className="sticky top-28 rounded-xl border border-border/60 bg-card/60 p-6 backdrop-blur-sm shadow-md space-y-6">
-              <div className="flex items-center gap-2 border-b border-border/60 pb-4">
-                <Plus className="h-5 w-5 text-foreground" />
-                <h2 className="text-lg font-bold tracking-tight">Publicar Novo Curso</h2>
+          <div ref={sidebarRef} className="lg:col-span-1 space-y-6">
+            
+            {/* Main Sticky Administrative Control Panel */}
+            <div className="sticky top-28 rounded-xl border border-border bg-card shadow-lg p-5 space-y-6 backdrop-blur-sm overflow-hidden">
+              
+              <div className="flex items-center gap-2 border-b border-border/80 pb-3">
+                <ClipboardList className="h-5 w-5 text-foreground" />
+                <div>
+                  <h2 className="text-lg font-bold tracking-tight text-foreground">Controle & Avaliação APM</h2>
+                  <p className="text-[11px] text-muted-foreground">Ferramentas de Gestão Acadêmica</p>
+                </div>
               </div>
 
-              {formSuccess && (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400 backdrop-blur-sm flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 shrink-0" />
-                  <span>Curso publicado com sucesso e disponível no Mural!</span>
+              {/* Sidebar Navigation Tabs */}
+              <div className="flex bg-secondary/50 p-1 rounded-lg text-xs gap-1">
+                <button
+                  onClick={() => setSidebarTab('stats')}
+                  className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+                    sidebarTab === 'stats'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Geral & Criar
+                </button>
+                
+                <button
+                  onClick={() => setSidebarTab('evaluations')}
+                  className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer relative flex items-center justify-center gap-1 ${
+                    sidebarTab === 'evaluations'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span>Avaliações</span>
+                  {cursosPendentes.length > 0 && (
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setSidebarTab('officers')}
+                  className={`flex-1 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
+                    sidebarTab === 'officers'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Ficha do Oficial
+                </button>
+              </div>
+
+              {/* TAB 1 CONTENT: Geral & Estatísticas & Criar Novo */}
+              {sidebarTab === 'stats' && (
+                <div className="space-y-6 animate-fade-in">
+                  
+                  {/* SEÇÃO 3: Estatísticas Rápidas */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      Estatísticas Rápidas
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1">
+                        <span className="block text-[10px] text-muted-foreground uppercase">Cursos Aplicados</span>
+                        <span className="block text-xl font-bold font-mono text-foreground">
+                          {totalCursosFeitos}
+                        </span>
+                      </div>
+                      <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1">
+                        <span className="block text-[10px] text-muted-foreground uppercase">Taxa Aprovação</span>
+                        <span className="block text-xl font-bold font-mono text-emerald-400">
+                          {approvalPercentage}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {maxSubscribedCourse && (
+                      <div className="rounded-lg border border-border/80 bg-background/50 p-3 space-y-1 text-xs">
+                        <span className="block text-[10px] text-muted-foreground uppercase">Recorde de Inscrições</span>
+                        <span className="font-semibold block text-foreground truncate" title={maxSubscribedCourse.title}>
+                          {maxSubscribedCourse.title}
+                        </span>
+                        <span className="block text-muted-foreground font-mono text-[10px]">
+                          {maxSubscribedCourse.subscribers.length} oficiais inscritos
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* FORM TO PUBLISH NEW COURSE */}
+                  <div className="border-t border-border/60 pt-5 space-y-4">
+                    <div className="flex items-center gap-1.5">
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Publicar Novo Curso
+                      </h3>
+                    </div>
+
+                    {formSuccess && (
+                      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400 backdrop-blur-sm flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 shrink-0" />
+                        <span>Curso publicado e disponível no Mural!</span>
+                      </div>
+                    )}
+
+                    <form onSubmit={handlePublish} className="space-y-4">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Nome do Curso *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground"
+                          placeholder="Ex: Formação em BOPE"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Descrição / Requisitos *
+                        </label>
+                        <textarea
+                          required
+                          rows={4}
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground resize-none"
+                          placeholder="Especifique fardamento, requisitos, locais e conteúdo programático."
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            Início *
+                          </label>
+                          <input
+                            type="datetime-local"
+                            required
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-2.5 py-2 text-xs outline-none focus:border-foreground"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            Término *
+                          </label>
+                          <input
+                            type="datetime-local"
+                            required
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-2.5 py-2 text-xs outline-none focus:border-foreground"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          Limite de Vagas (1 a 99) *
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          max={99}
+                          value={vagasLimit}
+                          onChange={(e) => setVagasLimit(e.target.value)}
+                          className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-xs outline-none focus:border-foreground"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="w-full rounded-lg bg-foreground py-2 text-xs font-bold text-background hover:bg-foreground/90 transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        {submitting ? 'Publicando...' : 'Publicar Curso'}
+                      </button>
+                    </form>
+                  </div>
                 </div>
               )}
 
-              <form onSubmit={handlePublish} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Nome do Curso *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm outline-none focus:border-foreground"
-                    placeholder="Ex: Formação em Técnicas do BOPE"
-                  />
-                </div>
+              {/* TAB 2 CONTENT: Pendências & Avaliações */}
+              {sidebarTab === 'evaluations' && (
+                <div className="space-y-6 animate-fade-in">
+                  
+                  {/* SEÇÃO 2: Pendências de Avaliação */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                      Pendências de Avaliação
+                    </h3>
 
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    O que vai ser / Descrição *
-                  </label>
-                  <textarea
-                    required
-                    rows={5}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm outline-none focus:border-foreground resize-none"
-                    placeholder="Especifique os requisitos, localização, fardamento exigido, etapas e o conteúdo programático do curso."
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Início *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm outline-none focus:border-foreground"
-                    />
+                    {cursosPendentes.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-border/50 bg-secondary/15 p-4 text-center">
+                        <p className="text-xs text-muted-foreground">Nenhuma pendência de avaliação encontrada. Todos os cursos concluídos foram avaliados!</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {cursosPendentes.map(c => {
+                          const count = getPendingCount(c)
+                          return (
+                            <button
+                              key={c.id}
+                              onClick={() => setSelectedCourseForEvaluation(c)}
+                              className={`w-full text-left rounded-lg p-2.5 border transition-all flex items-center justify-between text-xs cursor-pointer ${
+                                selectedCourseForEvaluation?.id === c.id
+                                  ? 'border-foreground bg-secondary/80'
+                                  : 'border-border/60 bg-background/50 hover:border-foreground/40'
+                              }`}
+                            >
+                              <div className="space-y-0.5 flex-1 min-w-0 pr-2">
+                                <span className="font-bold block text-foreground truncate">{c.title}</span>
+                                <span className="text-[10px] text-muted-foreground block font-mono">
+                                  Término: {formatDateTime(c.endDate)}
+                                </span>
+                              </div>
+                              <span className="shrink-0 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-500 animate-pulse">
+                                {count} pendente{count > 1 ? 's' : ''}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Término *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm outline-none focus:border-foreground"
-                    />
+                  {/* SEÇÃO 1: Painel de Avaliação de Participantes */}
+                  <div className="border-t border-border/60 pt-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Award className="h-3.5 w-3.5" />
+                        Avaliação de Participantes
+                      </h3>
+                      {selectedCourseForEvaluation && (
+                        <button
+                          onClick={() => setSelectedCourseForEvaluation(null)}
+                          className="text-xs text-muted-foreground hover:text-foreground underline"
+                        >
+                          Fechar
+                        </button>
+                      )}
+                    </div>
+
+                    {!selectedCourseForEvaluation ? (
+                      <div className="rounded-lg border border-dashed border-border/50 p-4 text-center bg-secondary/15">
+                        <p className="text-xs text-muted-foreground">
+                          Selecione um curso finalizado (no Mural ou na lista de Pendências acima) para avaliar os oficiais inscritos individualmente.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="rounded-lg bg-secondary/30 border border-border/50 p-3 space-y-1">
+                          <span className="text-[10px] font-semibold text-muted-foreground block uppercase">Curso Selecionado</span>
+                          <span className="font-bold text-xs text-foreground block">{selectedCourseForEvaluation.title}</span>
+                          <span className="text-[10px] text-muted-foreground block">
+                            Inscritos: {selectedCourseForEvaluation.subscribers.length} • Pendentes: {getPendingCount(selectedCourseForEvaluation)}
+                          </span>
+                        </div>
+
+                        {selectedCourseForEvaluation.subscribers.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-2 italic">Nenhum oficial se inscreveu neste curso.</p>
+                        ) : (
+                          <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
+                            {selectedCourseForEvaluation.subscribers.map((subscriber) => {
+                              const inputState = evaluationInputs[subscriber.userId] || { status: '', nota: '' }
+                              const statusText = evaluationStatusText[subscriber.userId]
+
+                              return (
+                                <div
+                                  key={subscriber.userId}
+                                  className="p-3 rounded-lg border border-border/80 bg-background/40 space-y-2.5 shadow-xs"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-xs text-foreground/90">{subscriber.qra}</span>
+                                    {statusText && (
+                                      <span className={`text-[10px] font-medium ${
+                                        statusText === 'Salvo!' ? 'text-emerald-400' : 'text-muted-foreground animate-pulse'
+                                      }`}>
+                                        {statusText}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {/* Status selection manual */}
+                                    <div>
+                                      <label className="text-[10px] text-muted-foreground block font-medium mb-1">Status</label>
+                                      <select
+                                        value={inputState.status}
+                                        onChange={(e) => {
+                                          setEvaluationInputs(prev => ({
+                                            ...prev,
+                                            [subscriber.userId]: {
+                                              ...prev[subscriber.userId],
+                                              status: e.target.value as any,
+                                            }
+                                          }))
+                                        }}
+                                        className="w-full text-xs bg-secondary/40 border border-border/80 rounded px-2 py-1.5 outline-none focus:border-foreground"
+                                      >
+                                        <option value="">Selecione...</option>
+                                        <option value="Aprovado">Aprovado</option>
+                                        <option value="Reprovado">Reprovado</option>
+                                      </select>
+                                    </div>
+
+                                    {/* Nota field numerical (0 to 10) */}
+                                    <div>
+                                      <label className="text-[10px] text-muted-foreground block font-medium mb-1">Nota (0 a 10)</label>
+                                      <input
+                                        type="text"
+                                        placeholder="Ex: 8.5"
+                                        value={inputState.nota}
+                                        onChange={(e) => {
+                                          setEvaluationInputs(prev => ({
+                                            ...prev,
+                                            [subscriber.userId]: {
+                                              ...prev[subscriber.userId],
+                                              nota: e.target.value,
+                                            }
+                                          }))
+                                        }}
+                                        className="w-full text-xs font-mono bg-secondary/40 border border-border/80 rounded px-2 py-1.5 outline-none focus:border-foreground"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveEvaluation(selectedCourseForEvaluation.id, subscriber.userId)}
+                                    className="w-full rounded bg-secondary hover:bg-foreground hover:text-background py-1 text-[11px] font-bold transition-all text-foreground flex items-center justify-center gap-1"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                    Gravar Avaliação
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Limite de Vagas (1 a 99) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    max={99}
-                    value={vagasLimit}
-                    onChange={(e) => setVagasLimit(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-border/80 bg-background/50 px-3 py-2 text-sm outline-none focus:border-foreground"
-                  />
+              {/* TAB 3 CONTENT: Ficha do Oficial (Search & Profile history) */}
+              {sidebarTab === 'officers' && (
+                <div className="space-y-6 animate-fade-in">
+                  
+                  {/* SEÇÃO 4: Busca por QRA/Nome do Oficial */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Search className="h-3.5 w-3.5" />
+                      Ficha do Oficial (Consulta)
+                    </h3>
+
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        placeholder="Buscar Oficial por QRA..."
+                        value={officersSearchQuery}
+                        onChange={(e) => {
+                          setOfficersSearchQuery(e.target.value)
+                          // Reset profile if clearing search
+                          if (e.target.value.trim() === '') {
+                            setSelectedOfficerForProfile(null)
+                          }
+                        }}
+                        className="w-full rounded-lg border border-border/80 bg-background/50 pl-8 pr-3 py-2 text-xs outline-none focus:border-foreground"
+                      />
+                    </div>
+
+                    {/* Search Results */}
+                    {officersSearchQuery.trim() !== '' && filteredOfficers.length > 0 && (
+                      <div className="rounded-lg border border-border bg-card shadow-sm max-h-36 overflow-y-auto text-xs divide-y divide-border/60">
+                        {filteredOfficers.map(officer => (
+                          <button
+                            key={officer.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedOfficerForProfile(officer)
+                              setOfficersSearchQuery('') // clear query to hide suggestions
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-secondary/40 transition-colors flex items-center justify-between"
+                          >
+                            <span className="font-bold text-foreground">{officer.qra || officer.username}</span>
+                            <span className="text-[10px] text-muted-foreground font-semibold">{officer.patente || 'Oficial'}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {officersSearchQuery.trim() !== '' && filteredOfficers.length === 0 && (
+                      <p className="text-[11px] text-muted-foreground italic text-center py-1">Nenhum oficial correspondente encontrado.</p>
+                    )}
+                  </div>
+
+                  {/* DISPLAY SELECTED OFFICER PROFILE */}
+                  <div className="border-t border-border/60 pt-5 space-y-4">
+                    {!selectedOfficerForProfile ? (
+                      <div className="rounded-lg border border-dashed border-border/50 p-4 text-center bg-secondary/15">
+                        <p className="text-xs text-muted-foreground">
+                          Utilize o campo de busca acima para carregar a ficha de treinamento e histórico de avaliações de qualquer oficial da Polícia Militar.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Header card of the Officer */}
+                        <div className="rounded-lg bg-secondary/30 border border-border/50 p-3 space-y-1 relative">
+                          <button
+                            onClick={() => setSelectedOfficerForProfile(null)}
+                            title="Remover oficial"
+                            className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                          
+                          <span className="text-[9px] font-bold text-muted-foreground uppercase bg-secondary/80 px-1.5 py-0.5 rounded">
+                            {selectedOfficerForProfile.patente || 'Sem patente'}
+                          </span>
+                          
+                          <span className="font-bold text-sm text-foreground block mt-1">
+                            {selectedOfficerForProfile.qra || selectedOfficerForProfile.username}
+                          </span>
+                          
+                          <div className="flex flex-col gap-0.5 text-[10px] text-muted-foreground pt-1 border-t border-border/20">
+                            <span>Unidade: {selectedOfficerForProfile.unidade_operacional || 'Efetividade'}</span>
+                            <span>Cargo: {Array.isArray(selectedOfficerForProfile.cargo) ? selectedOfficerForProfile.cargo.join(', ') : 'Oficial'}</span>
+                          </div>
+                        </div>
+
+                        {/* Officer's course history */}
+                        <div className="space-y-2.5">
+                          <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                            <History className="h-3 w-3" />
+                            Histórico de Instruções e Notas
+                          </h4>
+
+                          {getOfficerCourseHistory(selectedOfficerForProfile.id).length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic text-center py-2">
+                              Este oficial ainda não se inscreveu em nenhum curso.
+                            </p>
+                          ) : (
+                            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                              {getOfficerCourseHistory(selectedOfficerForProfile.id).map(hist => (
+                                <div
+                                  key={hist.id}
+                                  className="p-2.5 rounded-lg border border-border/60 bg-background/30 space-y-1 text-xs"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="font-bold text-foreground/90 truncate block max-w-[130px]">{hist.title}</span>
+                                    {hist.status ? (
+                                      <span className={`shrink-0 text-[9px] font-bold uppercase rounded px-1 ${
+                                        hist.status === 'Aprovado'
+                                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
+                                          : 'bg-red-500/10 text-red-400 border border-red-500/25'
+                                      }`}>
+                                        {hist.status}
+                                      </span>
+                                    ) : (
+                                      <span className="shrink-0 text-[9px] font-semibold text-amber-500/90 rounded bg-amber-500/10 border border-amber-500/20 px-1 animate-pulse">
+                                        Pendente
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between text-[10px] text-muted-foreground/80 font-mono">
+                                    <span>{new Date(hist.startDate).toLocaleDateString('pt-BR')}</span>
+                                    {hist.nota !== null && (
+                                      <span className="font-bold text-foreground">
+                                        Nota: {hist.nota.toFixed(1)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+                    )}
+                  </div>
                 </div>
+              )}
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="mt-2 w-full rounded-lg bg-foreground py-2.5 text-sm font-bold text-background hover:bg-foreground/90 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {submitting ? 'Publicando...' : 'Publicar'}
-                </button>
-              </form>
             </div>
           </div>
         )}
+
       </div>
     </main>
   )

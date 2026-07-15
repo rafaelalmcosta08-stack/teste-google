@@ -30,6 +30,12 @@ export interface Course {
     subscribedAt: string
   }>
   readBy: string[]
+  evaluations?: Record<string, {
+    status: 'Aprovado' | 'Reprovado'
+    nota: number
+    evaluatedBy: string
+    evaluatedAt: string
+  }>
 }
 
 // Safe read helper
@@ -293,6 +299,54 @@ export async function POST(req: NextRequest) {
     }
 
     course.subscribers.splice(index, 1)
+
+    await writeCourses(courses)
+    await broadcastUpdate()
+
+    return NextResponse.json({ success: true, course })
+  }
+
+  if (action === 'evaluate-subscriber') {
+    if (!isAuthorizedToManage) {
+      return NextResponse.json({ error: 'Permissão insuficiente para avaliar participantes.' }, { status: 403 })
+    }
+
+    const { id, userId, status, nota } = body
+    if (!id || !userId || !status || nota === undefined) {
+      return NextResponse.json({ error: 'Dados insuficientes para a avaliação.' }, { status: 400 })
+    }
+
+    const course = courses.find(c => c.id === id)
+    if (!course) {
+      return NextResponse.json({ error: 'Curso não encontrado.' }, { status: 404 })
+    }
+
+    if (status !== 'Aprovado' && status !== 'Reprovado') {
+      return NextResponse.json({ error: 'Status de avaliação inválido.' }, { status: 400 })
+    }
+
+    const grade = parseFloat(nota)
+    if (isNaN(grade) || grade < 0 || grade > 10) {
+      return NextResponse.json({ error: 'A nota deve ser um número entre 0 e 10.' }, { status: 400 })
+    }
+
+    // Ensure evaluations record exists
+    if (!course.evaluations) {
+      course.evaluations = {}
+    }
+
+    // Verify subscriber exists
+    const hasSubscriber = course.subscribers.some(s => s.userId === userId)
+    if (!hasSubscriber) {
+      return NextResponse.json({ error: 'Usuário não inscrito neste curso.' }, { status: 400 })
+    }
+
+    course.evaluations[userId] = {
+      status,
+      nota: grade,
+      evaluatedBy: requesterMeta.qra || requesterMeta.username || 'Oficial',
+      evaluatedAt: new Date().toISOString()
+    }
 
     await writeCourses(courses)
     await broadcastUpdate()
