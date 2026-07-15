@@ -63,6 +63,7 @@ interface Course {
 export default function CursosPage() {
   const { user, profile, session } = useAuth()
   const [courses, setCourses] = useState<Course[]>([])
+  const [editais, setEditais] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -189,14 +190,31 @@ export default function CursosPage() {
     }
   }
 
+  // Fetch Editais
+  const fetchEditais = async () => {
+    try {
+      const res = await fetch('/api/editais')
+      if (res.ok) {
+        const data = await res.json()
+        setEditais(data.editais || [])
+      }
+    } catch (err) {
+      console.error('Falha ao buscar editais:', err)
+    }
+  }
+
   useEffect(() => {
     fetchCourses()
+    fetchEditais()
 
     // Listen to real-time events via SSE
     const handleRealtimeEvent = (e: Event) => {
       const { detail } = e as CustomEvent
       if (detail && detail.event === 'cursos-updated') {
         fetchCourses()
+      }
+      if (detail && detail.event === 'editais-updated') {
+        fetchEditais()
       }
     }
 
@@ -595,6 +613,25 @@ export default function CursosPage() {
         }
       })
       .sort((a, b) => b.startDate.localeCompare(a.startDate))
+  }
+
+  // Get edital history for selected officer
+  const getOfficerEditalHistory = (officerId: string) => {
+    return editais
+      .filter(e => e.subscribers.some(sub => sub.userId === officerId))
+      .map(e => {
+        const evalData = e.evaluations?.[officerId]
+        return {
+          id: e.id,
+          title: e.title,
+          endDate: e.endDate,
+          unidade: e.unidade,
+          status: evalData?.status ?? null,
+          nota: evalData?.nota ?? null,
+          evaluatedBy: evalData?.evaluatedBy ?? null,
+        }
+      })
+      .sort((a, b) => b.endDate.localeCompare(a.endDate))
   }
 
   // Search filtered officers (excluding instructors)
@@ -1743,6 +1780,61 @@ export default function CursosPage() {
                                   </div>
                                   <div className="flex items-center justify-between text-[10px] text-muted-foreground/80 font-mono">
                                     <span>{new Date(hist.startDate).toLocaleDateString('pt-BR')}</span>
+                                    {hist.nota !== null && (
+                                      <span className="font-bold text-foreground">
+                                        Nota: {hist.nota.toFixed(1)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Officer's process selection (edital) history */}
+                        <div className="space-y-2.5 pt-4 border-t border-border/20">
+                          <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                            <FileText className="h-3 w-3" />
+                            Histórico de Processos Seletivos (Editais)
+                          </h4>
+
+                          {getOfficerEditalHistory(selectedOfficerForProfile.id).length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic text-center py-2">
+                              Este oficial ainda não se inscreveu em nenhum edital.
+                            </p>
+                          ) : (
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                              {getOfficerEditalHistory(selectedOfficerForProfile.id).map(hist => (
+                                <div
+                                  key={hist.id}
+                                  className="p-2.5 rounded-lg border border-border/60 bg-background/30 space-y-1 text-xs"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex items-center gap-1.5 flex-1">
+                                      <span className="shrink-0 rounded bg-secondary px-1.5 py-0.5 text-[9px] font-bold text-foreground uppercase">
+                                        {hist.unidade}
+                                      </span>
+                                      <span className="font-bold text-foreground/90 truncate block max-w-[110px]" title={hist.title}>
+                                        {hist.title}
+                                      </span>
+                                    </div>
+                                    {hist.status ? (
+                                      <span className={`shrink-0 text-[9px] font-bold uppercase rounded px-1 ${
+                                        hist.status === 'Aprovado'
+                                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
+                                          : 'bg-red-500/10 text-red-400 border border-red-500/25'
+                                      }`}>
+                                        {hist.status}
+                                      </span>
+                                    ) : (
+                                      <span className="shrink-0 text-[9px] font-semibold text-amber-500/90 rounded bg-amber-500/10 border border-amber-500/20 px-1 animate-pulse">
+                                        Inscrito / Pendente
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center justify-between text-[10px] text-muted-foreground/80 font-mono">
+                                    <span>{new Date(hist.endDate).toLocaleDateString('pt-BR')}</span>
                                     {hist.nota !== null && (
                                       <span className="font-bold text-foreground">
                                         Nota: {hist.nota.toFixed(1)}
