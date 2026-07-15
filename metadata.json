@@ -1,0 +1,8 @@
+{
+  "name": "Polícia Legacy",
+  "description": "Departamento de Polícia Legacy - Servir e Proteger. Manual de Estudo TAFF, unidades e recrutamento.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
