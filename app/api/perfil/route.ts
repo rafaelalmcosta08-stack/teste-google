@@ -23,26 +23,48 @@ export async function GET(req: NextRequest) {
     .eq('id', userId)
     .maybeSingle()
 
-  if (tableData) {
-    return NextResponse.json({ profile: tableData })
+  // Lê do user_metadata para obter os campos hierárquicos completos
+  const { data: userData, error } = await admin.auth.admin.getUserById(userId)
+  
+  if (!userData?.user) {
+    if (tableData) {
+      return NextResponse.json({
+        profile: {
+          ...tableData,
+          cargo: [],
+          unidade_administrativa: 'Sem Efetividade',
+          unidade_operacional: 'Sem Efetividade',
+          status_atividade: 'Ativo',
+          last_login_at: null,
+          status_atividade_override_at: null,
+          cursos: [],
+          advertencia: [],
+        }
+      })
+    }
+    return NextResponse.json({ profile: null })
   }
 
-  // Fallback: lê do user_metadata (funciona sempre, sem GRANT)
-  const { data: userData, error } = await admin.auth.admin.getUserById(userId)
-  if (error || !userData?.user) return NextResponse.json({ profile: null })
-
   const meta = userData.user.user_metadata ?? {}
-  if (!meta.username) return NextResponse.json({ profile: null })
+  if (!meta.username && !tableData) return NextResponse.json({ profile: null })
 
   return NextResponse.json({
     profile: {
       id: userData.user.id,
-      username: meta.username,
-      qra: meta.qra ?? null,
-      patente: meta.patente ?? null,
-      status: meta.status ?? 'pendente',
-      role: meta.role ?? 'user',
-      created_at: userData.user.created_at,
+      username: meta.username || tableData?.username || '',
+      qra: meta.qra ?? tableData?.qra ?? null,
+      patente: meta.patente ?? tableData?.patente ?? null,
+      status: meta.status ?? tableData?.status ?? 'pendente',
+      role: meta.role ?? tableData?.role ?? 'user',
+      created_at: userData.user.created_at || tableData?.created_at,
+      cargo: meta.cargo ?? [],
+      unidade_administrativa: meta.unidade_administrativa ?? 'Sem Efetividade',
+      unidade_operacional: meta.unidade_operacional ?? 'Sem Efetividade',
+      status_atividade: meta.status_atividade ?? 'Ativo',
+      last_login_at: meta.last_login_at ?? null,
+      status_atividade_override_at: meta.status_atividade_override_at ?? null,
+      cursos: meta.cursos ?? [],
+      advertencia: meta.advertencia ?? [],
     },
   })
 }

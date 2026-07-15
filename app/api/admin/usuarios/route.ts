@@ -19,15 +19,43 @@ export async function GET() {
   // Filtra apenas usuarios com username em user_metadata (usuarios do sistema)
   const usuarios = (data?.users ?? [])
     .filter((u) => u.user_metadata?.username)
-    .map((u) => ({
-      id: u.id,
-      username: u.user_metadata.username,
-      qra: u.user_metadata.qra ?? null,
-      patente: u.user_metadata.patente ?? null,
-      status: u.user_metadata.status ?? 'pendente',
-      role: u.user_metadata.role ?? 'user',
-      created_at: u.created_at,
-    }))
+    .map((u) => {
+      const meta = u.user_metadata ?? {}
+      
+      // Regra de negócio: calcular status_atividade automático
+      const now = new Date()
+      const lastLoginStr = meta.last_login_at || u.created_at || new Date(0).toISOString()
+      const lastLogin = new Date(lastLoginStr)
+      const overrideStr = meta.status_atividade_override_at
+      const overrideDate = overrideStr ? new Date(overrideStr) : null
+      
+      const referenciaDate = overrideDate && overrideDate > lastLogin ? overrideDate : lastLogin
+      const diffTime = Math.abs(now.getTime() - referenciaDate.getTime())
+      const diffDays = diffTime / (1000 * 60 * 60 * 24)
+      
+      let statusAtividadeCalculado = meta.status_atividade ?? 'Ativo'
+      if (diffDays >= 15) {
+        statusAtividadeCalculado = 'Inativo'
+      }
+
+      return {
+        id: u.id,
+        username: meta.username,
+        qra: meta.qra ?? null,
+        patente: meta.patente ?? null,
+        status: meta.status ?? 'pendente',
+        role: meta.role ?? 'user',
+        created_at: u.created_at,
+        cargo: meta.cargo ?? [],
+        unidade_administrativa: meta.unidade_administrativa ?? 'Sem Efetividade',
+        unidade_operacional: meta.unidade_operacional ?? 'Sem Efetividade',
+        status_atividade: statusAtividadeCalculado,
+        last_login_at: meta.last_login_at ?? null,
+        status_atividade_override_at: meta.status_atividade_override_at ?? null,
+        cursos: meta.cursos ?? [],
+        advertencia: meta.advertencia ?? [],
+      }
+    })
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   return NextResponse.json({ usuarios })
@@ -35,7 +63,21 @@ export async function GET() {
 
 // PATCH /api/admin/usuarios — atualiza status ou role de um usuário
 export async function PATCH(req: NextRequest) {
-  const { id, status, role } = await req.json()
+  const {
+    id,
+    status,
+    role,
+    patente,
+    cargo,
+    unidade_administrativa,
+    unidade_operacional,
+    status_atividade,
+    status_atividade_override_at,
+    cursos,
+    advertencia,
+    last_login_at,
+  } = await req.json()
+  
   if (!id) return NextResponse.json({ error: 'ID ausente.' }, { status: 400 })
 
   const admin = getAdminClient()
@@ -52,6 +94,15 @@ export async function PATCH(req: NextRequest) {
 
   if (status !== undefined) novoMeta.status = status
   if (role !== undefined) novoMeta.role = role
+  if (patente !== undefined) novoMeta.patente = patente
+  if (cargo !== undefined) novoMeta.cargo = cargo
+  if (unidade_administrativa !== undefined) novoMeta.unidade_administrativa = unidade_administrativa
+  if (unidade_operacional !== undefined) novoMeta.unidade_operacional = unidade_operacional
+  if (status_atividade !== undefined) novoMeta.status_atividade = status_atividade
+  if (status_atividade_override_at !== undefined) novoMeta.status_atividade_override_at = status_atividade_override_at
+  if (cursos !== undefined) novoMeta.cursos = cursos
+  if (advertencia !== undefined) novoMeta.advertencia = advertencia
+  if (last_login_at !== undefined) novoMeta.last_login_at = last_login_at
 
   const { error: updateError } = await admin.auth.admin.updateUserById(id, {
     user_metadata: novoMeta,
@@ -67,6 +118,9 @@ export async function PATCH(req: NextRequest) {
   }
   if (role !== undefined) {
     await admin.from('profiles').update({ role }).eq('id', id).then(() => {}).catch(() => {})
+  }
+  if (patente !== undefined) {
+    await admin.from('profiles').update({ patente }).eq('id', id).then(() => {}).catch(() => {})
   }
 
   return NextResponse.json({ success: true })

@@ -87,6 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: 'Usuário ou senha incorretos.' }
     }
 
+    // Atualiza a data do último login no metadado do usuário
+    await supabase.auth.updateUser({
+      data: { last_login_at: new Date().toISOString() }
+    }).catch(() => {})
+
     // Busca o perfil via server-side para verificar status
     const p = await fetchProfile(data.user.id)
     if (!p) {
