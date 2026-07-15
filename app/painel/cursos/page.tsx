@@ -734,16 +734,32 @@ export default function CursosPage() {
   return (
     <main className="mx-auto max-w-[1600px] px-6 pb-24 pt-16 sm:px-10 lg:px-16">
       {/* Title Header */}
-      <div className="text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
-          <GraduationCap className="h-7 w-7 text-foreground" />
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border/60 pb-6 mb-8">
+        <div>
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4 text-foreground" />
+            <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
+              ACADEMIA DA POLÍCIA MILITAR (APM)
+            </span>
+          </div>
+          <h1 id="cursos-titulo" className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl text-foreground">
+            Capacitação & Cursos
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Participe de instruções oficiais da Academia da Polícia Militar (APM) para aprimorar suas competências técnicas e operacionais.
+          </p>
         </div>
-        <h1 id="cursos-titulo" className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
-          Capacitação & Cursos
-        </h1>
-        <p className="mx-auto mt-4 max-w-xl text-pretty leading-relaxed text-muted-foreground">
-          Participe de instruções oficiais da Academia da Polícia Militar (APM) para aprimorar suas competências técnicas e operacionais.
-        </p>
+
+        {/* Dynamic Brasília Clock */}
+        <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-secondary/30 px-4 py-2.5 shrink-0 self-start md:self-center shadow-sm">
+          <Clock className="h-4.5 w-4.5 text-muted-foreground" />
+          <div className="text-left">
+            <span className="block text-[9px] font-bold text-muted-foreground uppercase">Fuso Horário Oficial</span>
+            <span className="block text-xs font-bold font-mono text-foreground/90">
+              {brasiliaTime ? formatDateTime(brasiliaTime) : 'Carregando relógio...'}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Main Error Banner */}
