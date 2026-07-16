@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context'
 import { PainelHeader } from '@/components/painel-header'
 import { PainelSidebar } from '@/components/painel-sidebar'
 import { SiteBackground } from '@/components/site-background'
+import { FuturisticLoader } from '@/components/futuristic-loader'
 
 export default function PainelLayout({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth()
@@ -23,18 +24,9 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
     }
   }, [user, profile, loading, router])
 
-  if (loading) {
-    return (
-      <>
-        <SiteBackground />
-        <div className="flex min-h-screen items-center justify-center">
-          <p className="text-sm text-muted-foreground">Carregando...</p>
-        </div>
-      </>
-    )
+  if (loading || !user || !profile || profile.status !== 'aprovado') {
+    return <FuturisticLoader />
   }
-
-  if (!user || !profile || profile.status !== 'aprovado') return null
 
   return (
     <div className="min-h-screen bg-transparent text-foreground">
@@ -47,3 +39,4 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
     </div>
   )
 }
+

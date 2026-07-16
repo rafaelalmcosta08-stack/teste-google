@@ -8,7 +8,7 @@ import { motion } from 'motion/react'
 import { useAuth } from '@/lib/auth-context'
 
 export function SiteHeader() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [hoveredNav, setHoveredNav] = useState<string | null>(null)
   const [hoveredAction, setHoveredAction] = useState<string | null>(null)
   const pathname = usePathname()
@@ -64,6 +64,22 @@ export function SiteHeader() {
           className="flex items-center gap-4 sm:gap-6"
           onMouseLeave={() => setHoveredAction(null)}
         >
+          {user && profile && (
+            <div className="flex items-center gap-3 border-r border-white/10 pr-4 mr-1">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white border border-white/10">
+                {profile.username ? profile.username[0].toUpperCase() : 'U'}
+              </div>
+              <div className="hidden flex-col min-w-0 sm:flex text-left">
+                <span className="text-sm font-semibold text-white truncate leading-none mb-1">
+                  {profile.username}
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider leading-none">
+                  {profile.role === 'admin' ? 'Administrador' : 'Membro'}
+                </span>
+              </div>
+            </div>
+          )}
+
           {!user && (
             <Link
               href="/recrutador"
@@ -86,7 +102,7 @@ export function SiteHeader() {
           )}
 
           <Link
-            href="/login"
+            href={user ? "/painel" : "/login"}
             className="relative flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium text-white transition-all duration-300 border border-white/10 shadow-sm overflow-hidden"
             onMouseEnter={() => setHoveredAction('login')}
           >
@@ -104,7 +120,7 @@ export function SiteHeader() {
               <div className="absolute inset-0 -z-10 bg-white/5" />
             )}
             <LogIn className="h-4 w-4 text-primary" />
-            <span>Dashboard</span>
+            <span>{user ? "Ir para o Painel" : "Dashboard"}</span>
           </Link>
         </div>
       </div>

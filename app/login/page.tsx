@@ -9,6 +9,7 @@ import { SiteBackground } from '@/components/site-background'
 import { LoginForm } from '@/components/login-form'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
+import { FuturisticLoader } from '@/components/futuristic-loader'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -22,6 +23,10 @@ export default function LoginPage() {
 
   const displayName = profile?.qra || profile?.username || user?.email?.split('@')[0] || 'Policial'
 
+  if (loading) {
+    return <FuturisticLoader />
+  }
+
   return (
     <>
       <SiteBackground />
@@ -29,12 +34,7 @@ export default function LoginPage() {
 
       <main className="flex min-h-screen items-center justify-center px-4 pt-16">
         <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/70 p-8 backdrop-blur-sm">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <p className="mt-4 text-sm text-muted-foreground">Carregando...</p>
-            </div>
-          ) : user ? (
+          {user ? (
             <div className="flex flex-col items-center text-center">
               <div
                 data-stagger
