@@ -139,6 +139,67 @@ ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON public.chats TO service_role;
 GRANT ALL ON public.chats TO authenticated;
 GRANT ALL ON public.chats TO anon;
+
+CREATE TABLE IF NOT EXISTS public.fardamentos (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  photo_url TEXT,
+  code TEXT NOT NULL,
+  category TEXT NOT NULL,
+  allowed_units JSONB NOT NULL DEFAULT '[]'::jsonb,
+  allowed_patentes JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.fardamentos ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.fardamentos TO service_role;
+GRANT ALL ON public.fardamentos TO authenticated;
+GRANT ALL ON public.fardamentos TO anon;
+
+CREATE TABLE IF NOT EXISTS public.armamentos (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  photo_url TEXT,
+  code TEXT NOT NULL,
+  category TEXT NOT NULL,
+  min_patente TEXT NOT NULL,
+  allowed_units JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.armamentos ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.armamentos TO service_role;
+GRANT ALL ON public.armamentos TO authenticated;
+GRANT ALL ON public.armamentos TO anon;
+
+CREATE TABLE IF NOT EXISTS public.viaturas (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  photo_url TEXT,
+  prefix TEXT NOT NULL,
+  unit TEXT NOT NULL,
+  min_patente TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.viaturas ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.viaturas TO service_role;
+GRANT ALL ON public.viaturas TO authenticated;
+GRANT ALL ON public.viaturas TO anon;
+
+CREATE TABLE IF NOT EXISTS public.prisoes (
+  id TEXT PRIMARY KEY,
+  preso_nome TEXT NOT NULL,
+  preso_rg TEXT NOT NULL,
+  motivo TEXT NOT NULL,
+  data_hora TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  oficial_nome TEXT NOT NULL,
+  oficial_qra TEXT NOT NULL,
+  oficial_id UUID NOT NULL,
+  observacoes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.prisoes ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.prisoes TO service_role;
+GRANT ALL ON public.prisoes TO authenticated;
+GRANT ALL ON public.prisoes TO anon;
 `
 
 export async function GET(req: NextRequest) {

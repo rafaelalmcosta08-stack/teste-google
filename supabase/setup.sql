@@ -114,3 +114,64 @@ grant all on public.chats to service_role;
 grant all on public.chats to authenticated;
 grant all on public.chats to anon;
 
+create table if not exists public.fardamentos (
+  id text primary key,
+  name text not null,
+  photo_url text,
+  code text not null,
+  category text not null,
+  allowed_units jsonb not null default '[]'::jsonb,
+  allowed_patentes jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+alter table public.fardamentos enable row level security;
+grant all on public.fardamentos to service_role;
+grant all on public.fardamentos to authenticated;
+grant all on public.fardamentos to anon;
+
+create table if not exists public.armamentos (
+  id text primary key,
+  name text not null,
+  photo_url text,
+  code text not null,
+  category text not null,
+  min_patente text not null,
+  allowed_units jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+alter table public.armamentos enable row level security;
+grant all on public.armamentos to service_role;
+grant all on public.armamentos to authenticated;
+grant all on public.armamentos to anon;
+
+create table if not exists public.viaturas (
+  id text primary key,
+  name text not null,
+  photo_url text,
+  prefix text not null,
+  unit text not null,
+  min_patente text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.viaturas enable row level security;
+grant all on public.viaturas to service_role;
+grant all on public.viaturas to authenticated;
+grant all on public.viaturas to anon;
+
+create table if not exists public.prisoes (
+  id text primary key,
+  preso_nome text not null,
+  preso_rg text not null,
+  motivo text not null,
+  data_hora timestamptz not null default now(),
+  oficial_nome text not null,
+  oficial_qra text not null,
+  oficial_id uuid not null,
+  observacoes text,
+  created_at timestamptz not null default now()
+);
+alter table public.prisoes enable row level security;
+grant all on public.prisoes to service_role;
+grant all on public.prisoes to authenticated;
+grant all on public.prisoes to anon;
+
