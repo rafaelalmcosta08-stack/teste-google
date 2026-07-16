@@ -62,13 +62,6 @@ const PATENTES = [
   'Recruta',
 ]
 
-const PRESET_IMAGES = [
-  { label: 'Glock 17 / Curta', url: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=500&q=80' },
-  { label: 'Carabina M4A1 / Longa', url: 'https://images.unsplash.com/photo-1601362840469-51e4d8d59085?w=500&q=80' },
-  { label: 'Taser / Não-Letal', url: 'https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?w=500&q=80' },
-  { label: 'Fuzil Sniper / Especial', url: 'https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&q=80' },
-]
-
 export default function ArmamentoPage() {
   const { profile, session } = useAuth()
   const [items, setItems] = useState<Armamento[]>([])
@@ -87,9 +80,8 @@ export default function ArmamentoPage() {
   // Form State
   const [name, setName] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
-  const [code, setCode] = useState('')
   const [category, setCategory] = useState('Arma Curta')
-  const [minPatente, setMinPatente] = useState('Recruta')
+  const [selectedPatentes, setSelectedPatentes] = useState<string[]>(['Recruta'])
   const [selectedUnits, setSelectedUnits] = useState<string[]>(['Todas'])
   const [submitting, setSubmitting] = useState(false)
 
@@ -120,9 +112,8 @@ export default function ArmamentoPage() {
     setEditingItem(null)
     setName('')
     setPhotoUrl('')
-    setCode('')
     setCategory('Arma Curta')
-    setMinPatente('Recruta')
+    setSelectedPatentes(['Recruta'])
     setSelectedUnits(['Todas'])
     setError(null)
     setIsModalOpen(true)
@@ -132,9 +123,19 @@ export default function ArmamentoPage() {
     setEditingItem(item)
     setName(item.name)
     setPhotoUrl(item.photoUrl || '')
-    setCode(item.code)
     setCategory(item.category)
-    setMinPatente(item.minPatente)
+    
+    let pats: string[] = ['Recruta']
+    try {
+      if (item.minPatente && item.minPatente.startsWith('[')) {
+        pats = JSON.parse(item.minPatente)
+      } else if (item.minPatente) {
+        pats = [item.minPatente]
+      }
+    } catch (_) {
+      pats = [item.minPatente || 'Recruta']
+    }
+    setSelectedPatentes(pats)
     setSelectedUnits(item.allowedUnits.length > 0 ? item.allowedUnits : ['Todas'])
     setError(null)
     setIsModalOpen(true)
@@ -164,8 +165,8 @@ export default function ArmamentoPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !code.trim() || !category || !minPatente) {
-      setError('Preencha os campos obrigatórios (Nome, Nº Registro/Série, Categoria, Patente Mínima).')
+    if (!name.trim() || !category || !photoUrl.trim() || selectedPatentes.length === 0) {
+      setError('Preencha os campos obrigatórios: Nome, Categoria, Link da Imagem e pelo menos uma Patente.')
       return
     }
 
@@ -176,10 +177,9 @@ export default function ArmamentoPage() {
       action: editingItem ? 'edit' : 'create',
       id: editingItem?.id,
       name: name.trim(),
-      photoUrl: photoUrl.trim() || null,
-      code: code.trim(),
+      photoUrl: photoUrl.trim(),
       category,
-      minPatente,
+      minPatente: selectedPatentes, // Will be serialized into the min_patente field
       allowedUnits: selectedUnits
     }
 
@@ -223,10 +223,20 @@ export default function ArmamentoPage() {
     })
   }
 
+  function handlePatenteToggle(pat: string) {
+    setSelectedPatentes(prev => {
+      if (prev.includes(pat)) {
+        const updated = prev.filter(p => p !== pat)
+        return updated.length === 0 ? ['Recruta'] : updated
+      } else {
+        return [...prev, pat]
+      }
+    })
+  }
+
   // Filtragem
   const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
-                          item.code.toLowerCase().includes(search.toLowerCase())
+    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = filterCategory === 'Todas' || item.category === filterCategory
     const matchesUnit = filterUnit === 'Todas' || 
                         item.allowedUnits.includes('Todas') || 
@@ -242,14 +252,20 @@ export default function ArmamentoPage() {
     const myUnit = profile?.unidade_operacional || 'Sem Efetividade'
     const unitAllowed = item.allowedUnits.includes('Todas') || item.allowedUnits.includes(myUnit)
 
-    // 2. Verifica Patente Mínima (Ordem hierárquica: menor índice é patente maior)
-    const myPatente = profile?.patente || 'Recruta'
-    const myPatenteIdx = PATENTES.indexOf(myPatente)
-    const requiredPatenteIdx = PATENTES.indexOf(item.minPatente)
+    // 2. Verifica se a patente do usuário está inclusa na lista de patentes autorizadas
+    let pats: string[] = []
+    try {
+      if (item.minPatente && item.minPatente.startsWith('[')) {
+        pats = JSON.parse(item.minPatente)
+      } else if (item.minPatente) {
+        pats = [item.minPatente]
+      }
+    } catch (_) {
+      pats = [item.minPatente || 'Recruta']
+    }
 
-    // Se o índice da patente do usuário for maior que o índice exigido,
-    // significa que sua patente é mais baixa hierarquicamente (ex: SoldadoIdx (12) > CaboIdx (11))
-    const patenteAllowed = myPatenteIdx !== -1 && requiredPatenteIdx !== -1 && myPatenteIdx <= requiredPatenteIdx
+    const myPatente = profile?.patente || 'Recruta'
+    const patenteAllowed = pats.length === 0 || pats.includes(myPatente)
 
     return unitAllowed && patenteAllowed
   }
@@ -284,7 +300,7 @@ export default function ArmamentoPage() {
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Pesquisar por nome ou série..."
+            placeholder="Pesquisar por nome..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-secondary/20 rounded-xl border border-border/50 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
@@ -366,17 +382,62 @@ export default function ArmamentoPage() {
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <h3 className="text-base font-bold tracking-tight truncate text-foreground">{item.name}</h3>
-                      <span className="font-mono text-[10px] font-semibold px-2 py-0.5 rounded bg-secondary text-muted-foreground border border-border/30 shrink-0">
-                        Nº {item.code}
-                      </span>
                     </div>
 
                     <div className="space-y-3 mt-4 border-t border-border/10 pt-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Patente Requerida</span>
-                        <span className="font-semibold text-foreground bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded">
-                          {item.minPatente}
-                        </span>
+                      <div>
+                        <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground block">Hierarquia Autorizada</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(() => {
+                            let pats: string[] = []
+                            try {
+                              if (item.minPatente && item.minPatente.startsWith('[')) {
+                                pats = JSON.parse(item.minPatente)
+                              } else if (item.minPatente) {
+                                pats = [item.minPatente]
+                              }
+                            } catch (_) {
+                              pats = [item.minPatente || 'Recruta']
+                            }
+                            
+                            if (pats.length === PATENTES.length) {
+                              return (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary border border-primary/15">
+                                  Todas as Patentes
+                                </span>
+                              )
+                            }
+                            
+                            return pats
+                              .sort((a, b) => PATENTES.indexOf(a) - PATENTES.indexOf(b))
+                              .slice(0, 4)
+                              .map(p => (
+                                <span key={p} className="text-[10px] px-2 py-0.5 rounded bg-secondary/50 text-foreground border border-border/30">
+                                  {p}
+                                </span>
+                              ))
+                          })()}
+                          {(() => {
+                            let pats: string[] = []
+                            try {
+                              if (item.minPatente && item.minPatente.startsWith('[')) {
+                                pats = JSON.parse(item.minPatente)
+                              } else if (item.minPatente) {
+                                pats = [item.minPatente]
+                              }
+                            } catch (_) {
+                              pats = []
+                            }
+                            if (pats.length > 4 && pats.length !== PATENTES.length) {
+                              return (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-secondary/50 text-muted-foreground">
+                                  +{pats.length - 4} mais
+                                </span>
+                              )
+                            }
+                            return null
+                          })()}
+                        </div>
                       </div>
 
                       <div>
@@ -435,7 +496,7 @@ export default function ArmamentoPage() {
               {editingItem ? 'Editar Registro de Arma' : 'Cadastrar Arma no Arsenal'}
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
               {error && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -456,72 +517,28 @@ export default function ArmamentoPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Número de Série / Registro *</label>
-                <input
-                  type="text"
-                  placeholder="Ex: SERIE-9988X"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                <label className="text-xs font-semibold text-foreground">Categoria *</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
                   className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-                  required
-                />
+                >
+                  {CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Categoria *</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-                  >
-                    {CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Patente Mínima Requerida *</label>
-                  <select
-                    value={minPatente}
-                    onChange={(e) => setMinPatente(e.target.value)}
-                    className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-                  >
-                    {PATENTES.map(pat => (
-                      <option key={pat} value={pat}>{pat}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground block">Foto da Arma</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground block">Foto da Arma *</label>
                 <input
-                  type="text"
-                  placeholder="URL da Foto (Ex: https://...)"
+                  type="url"
+                  placeholder="Link (URL) da Imagem Real (Ex: https://...)"
                   value={photoUrl}
                   onChange={(e) => setPhotoUrl(e.target.value)}
                   className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
+                  required
                 />
-                
-                <div>
-                  <span className="text-[10px] text-muted-foreground block mb-1.5">Ou selecione uma foto padrão de exemplo:</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PRESET_IMAGES.map((img) => (
-                      <button
-                        key={img.label}
-                        type="button"
-                        onClick={() => setPhotoUrl(img.url)}
-                        className={`px-2 py-1.5 text-[10px] text-left border rounded-lg hover:bg-secondary/40 transition-colors truncate ${
-                          photoUrl === img.url ? 'border-primary bg-primary/5 text-primary' : 'border-border/40'
-                        }`}
-                      >
-                        {img.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               <div className="space-y-2 border-t border-border/10 pt-3">
@@ -543,6 +560,45 @@ export default function ArmamentoPage() {
                       >
                         {active && <Check className="h-3 w-3" />}
                         {unit}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-2 border-t border-border/10 pt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground block">Hierarquia / Patentes Autorizadas</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedPatentes.length === PATENTES.length) {
+                        setSelectedPatentes(['Recruta'])
+                      } else {
+                        setSelectedPatentes([...PATENTES])
+                      }
+                    }}
+                    className="text-[10px] text-primary hover:underline font-bold"
+                  >
+                    {selectedPatentes.length === PATENTES.length ? 'Desmarcar Todos' : 'Marcar Todos'}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1.5">
+                  {PATENTES.map(pat => {
+                    const active = selectedPatentes.includes(pat)
+                    return (
+                      <button
+                        key={pat}
+                        type="button"
+                        onClick={() => handlePatenteToggle(pat)}
+                        className={`px-2 py-1 text-[10px] rounded border text-left transition-colors truncate flex items-center gap-1.5 ${
+                          active 
+                            ? 'bg-primary/10 border-primary text-primary font-bold' 
+                            : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40'
+                        }`}
+                      >
+                        <div className={`h-2 w-2 rounded-full shrink-0 ${active ? 'bg-primary' : 'bg-transparent border border-border'}`} />
+                        {pat}
                       </button>
                     )
                   })}

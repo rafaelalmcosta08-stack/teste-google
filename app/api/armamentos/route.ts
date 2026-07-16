@@ -83,17 +83,20 @@ export async function POST(req: NextRequest) {
 
   if (action === 'create') {
     const { name, photoUrl, code, category, minPatente, allowedUnits } = body
-    if (!name?.trim() || !code?.trim() || !category?.trim() || !minPatente?.trim()) {
+    if (!name?.trim() || !category?.trim() || !minPatente) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
+
+    const finalCode = code?.trim() || `ARM-${Math.floor(1000 + Math.random() * 9000)}`
+    const minPatenteStr = Array.isArray(minPatente) ? JSON.stringify(minPatente) : String(minPatente).trim()
 
     const newArmamento = {
       id: Math.random().toString(36).substring(2, 15),
       name: name.trim(),
       photo_url: photoUrl?.trim() || null,
-      code: code.trim(),
+      code: finalCode,
       category: category.trim(),
-      min_patente: minPatente.trim(),
+      min_patente: minPatenteStr,
       allowed_units: Array.isArray(allowedUnits) ? allowedUnits : [],
       created_at: new Date().toISOString()
     }
@@ -112,12 +115,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ID do armamento é obrigatório.' }, { status: 400 })
     }
 
+    const finalCode = code?.trim() || `ARM-${Math.floor(1000 + Math.random() * 9000)}`
+    const minPatenteStr = Array.isArray(minPatente) ? JSON.stringify(minPatente) : minPatente ? String(minPatente).trim() : 'Recruta'
+
     const updated = {
       name: name?.trim(),
       photo_url: photoUrl?.trim() || null,
-      code: code?.trim(),
+      code: finalCode,
       category: category?.trim(),
-      min_patente: minPatente?.trim(),
+      min_patente: minPatenteStr,
       allowed_units: Array.isArray(allowedUnits) ? allowedUnits : [],
     }
 

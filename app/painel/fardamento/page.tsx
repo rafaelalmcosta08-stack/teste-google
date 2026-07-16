@@ -165,8 +165,8 @@ export default function FardamentoPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !code.trim() || !category) {
-      setError('Preencha os campos obrigatórios (Nome, Código/Número, Categoria).')
+    if (!name.trim() || !code.trim() || !category || !photoUrl.trim()) {
+      setError('Preencha todos os campos obrigatórios: Nome, Numeração/Peças, Categoria e Link da Imagem.')
       return
     }
 
@@ -177,7 +177,7 @@ export default function FardamentoPage() {
       action: editingItem ? 'edit' : 'create',
       id: editingItem?.id,
       name: name.trim(),
-      photoUrl: photoUrl.trim() || null,
+      photoUrl: photoUrl.trim(),
       code: code.trim(),
       category,
       allowedUnits: selectedUnits,
@@ -373,9 +373,25 @@ export default function FardamentoPage() {
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <h3 className="text-base font-bold tracking-tight truncate text-foreground">{item.name}</h3>
-                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
-                        Nº {item.code}
-                      </span>
+                    </div>
+
+                    {/* Peças e Códigos do Fardamento - Textarea style display */}
+                    <div className="mt-3 bg-secondary/20 rounded-xl p-3 border border-dashed border-border/60">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-primary">Peças e Códigos (Jogo)</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(item.code)
+                            alert('Códigos copiados para a área de transferência!')
+                          }}
+                          className="text-[10px] text-muted-foreground hover:text-primary transition-colors hover:underline"
+                        >
+                          Copiar
+                        </button>
+                      </div>
+                      <p className="font-mono text-xs text-foreground whitespace-pre-wrap leading-relaxed select-all">
+                        {item.code}
+                      </p>
                     </div>
 
                     <div className="space-y-2 mt-3.5 border-t border-border/10 pt-3">
@@ -393,20 +409,28 @@ export default function FardamentoPage() {
                       <div>
                         <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground block">Hierarquia Autorizada</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {item.allowedPatentes.length === PATENTES.length ? (
+                          {item.allowedPatentes.includes('ALL_BY_UNIT') ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              Toda a Hierarquia da Unidade
+                            </span>
+                          ) : item.allowedPatentes.length === PATENTES.length ? (
                             <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary border border-primary/15">
                               Todos os Oficiais
                             </span>
                           ) : (
-                            item.allowedPatentes.slice(0, 3).map(p => (
-                              <span key={p} className="text-[10px] px-2 py-0.5 rounded bg-secondary/50 text-foreground border border-border/30">
-                                {p}
-                              </span>
-                            ))
+                            [...item.allowedPatentes]
+                              .filter(p => p !== 'ALL_BY_UNIT')
+                              .sort((a, b) => PATENTES.indexOf(a) - PATENTES.indexOf(b))
+                              .slice(0, 4)
+                              .map(p => (
+                                <span key={p} className="text-[10px] px-2 py-0.5 rounded bg-secondary/50 text-foreground border border-border/30">
+                                  {p}
+                                </span>
+                              ))
                           )}
-                          {item.allowedPatentes.length > 3 && (
+                          {!item.allowedPatentes.includes('ALL_BY_UNIT') && item.allowedPatentes.filter(p => p !== 'ALL_BY_UNIT').length > 4 && (
                             <span className="text-[10px] px-2 py-0.5 rounded bg-secondary/50 text-muted-foreground">
-                              +{item.allowedPatentes.length - 3} mais
+                              +{item.allowedPatentes.filter(p => p !== 'ALL_BY_UNIT').length - 4} mais
                             </span>
                           )}
                         </div>
@@ -479,12 +503,11 @@ export default function FardamentoPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">Numeração / Código no Jogo *</label>
-                <input
-                  type="text"
-                  placeholder="Ex: 153"
+                <textarea
+                  placeholder="Insira as peças e seus códigos (ex:&#10;Camisa: 153&#10;Calça: 154)"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
+                  className="w-full h-24 px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground resize-y font-mono"
                   required
                 />
               </div>
@@ -502,33 +525,16 @@ export default function FardamentoPage() {
                 </select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground block">Foto do Fardamento</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground block">Foto do Fardamento *</label>
                 <input
-                  type="text"
-                  placeholder="URL da Imagem (Ex: https://...)"
+                  type="url"
+                  placeholder="Link (URL) da Imagem Real (Ex: https://...)"
                   value={photoUrl}
                   onChange={(e) => setPhotoUrl(e.target.value)}
                   className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
+                  required
                 />
-                
-                <div className="pt-1">
-                  <span className="text-[10px] text-muted-foreground block mb-1.5">Ou selecione uma foto padrão de exemplo:</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PRESET_IMAGES.map((img) => (
-                      <button
-                        key={img.label}
-                        type="button"
-                        onClick={() => setPhotoUrl(img.url)}
-                        className={`px-2 py-1.5 text-[10px] text-left border rounded-lg hover:bg-secondary/40 transition-colors truncate ${
-                          photoUrl === img.url ? 'border-primary bg-primary/5 text-primary' : 'border-border/40'
-                        }`}
-                      >
-                        {img.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               <div className="space-y-2 border-t border-border/10 pt-3">
@@ -569,30 +575,59 @@ export default function FardamentoPage() {
                       }
                     }}
                     className="text-[10px] text-primary hover:underline font-bold"
+                    disabled={selectedPatentes.includes('ALL_BY_UNIT')}
                   >
                     {selectedPatentes.length === PATENTES.length ? 'Desmarcar Todos' : 'Marcar Todos'}
                   </button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1.5">
-                  {PATENTES.map(pat => {
-                    const active = selectedPatentes.includes(pat)
-                    return (
-                      <button
-                        key={pat}
-                        type="button"
-                        onClick={() => handlePatenteToggle(pat)}
-                        className={`px-2 py-1 text-[10px] rounded border text-left transition-colors truncate flex items-center gap-1.5 ${
-                          active 
-                            ? 'bg-primary/10 border-primary text-primary font-bold' 
-                            : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40'
-                        }`}
-                      >
-                        <div className={`h-2 w-2 rounded-full shrink-0 ${active ? 'bg-primary' : 'bg-transparent border border-border'}`} />
-                        {pat}
-                      </button>
-                    )
-                  })}
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedPatentes.includes('ALL_BY_UNIT')) {
+                      setSelectedPatentes(prev => prev.filter(p => p !== 'ALL_BY_UNIT'))
+                    } else {
+                      setSelectedPatentes(['ALL_BY_UNIT'])
+                    }
+                  }}
+                  className={`w-full p-2.5 rounded-lg border text-left text-xs transition-colors mb-2.5 flex items-center justify-between ${
+                    selectedPatentes.includes('ALL_BY_UNIT')
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold'
+                      : 'bg-secondary/10 border-border/40 text-muted-foreground hover:bg-secondary/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 ${
+                      selectedPatentes.includes('ALL_BY_UNIT') ? 'border-amber-400 bg-amber-400 text-black' : 'border-border'
+                    }`}>
+                      {selectedPatentes.includes('ALL_BY_UNIT') && <Check className="h-3 w-3 stroke-[3]" />}
+                    </div>
+                    <span>Toda a Hierarquia da(s) Unidade(s) selecionada(s)</span>
+                  </div>
+                </button>
+
+                {!selectedPatentes.includes('ALL_BY_UNIT') && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1.5">
+                    {PATENTES.map(pat => {
+                      const active = selectedPatentes.includes(pat)
+                      return (
+                        <button
+                          key={pat}
+                          type="button"
+                          onClick={() => handlePatenteToggle(pat)}
+                          className={`px-2 py-1 text-[10px] rounded border text-left transition-colors truncate flex items-center gap-1.5 ${
+                            active 
+                              ? 'bg-primary/10 border-primary text-primary font-bold' 
+                              : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40'
+                          }`}
+                        >
+                          <div className={`h-2 w-2 rounded-full shrink-0 ${active ? 'bg-primary' : 'bg-transparent border border-border'}`} />
+                          {pat}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-6 border-t border-border/10 mt-6">

@@ -81,15 +81,17 @@ export async function POST(req: NextRequest) {
 
   if (action === 'create') {
     const { name, photoUrl, prefix, unit, minPatente } = body
-    if (!name?.trim() || !prefix?.trim() || !unit?.trim() || !minPatente?.trim()) {
+    if (!name?.trim() || !unit?.trim() || !minPatente?.trim()) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
+
+    const finalPrefix = prefix?.trim() || `VT-${Math.floor(100 + Math.random() * 900)}`
 
     const newViatura = {
       id: Math.random().toString(36).substring(2, 15),
       name: name.trim(),
       photo_url: photoUrl?.trim() || null,
-      prefix: prefix.trim(),
+      prefix: finalPrefix,
       unit: unit.trim(),
       min_patente: minPatente.trim(),
       created_at: new Date().toISOString()
@@ -109,10 +111,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ID da viatura é obrigatório.' }, { status: 400 })
     }
 
+    const finalPrefix = prefix?.trim() || `VT-${Math.floor(100 + Math.random() * 900)}`
+
     const updated = {
       name: name?.trim(),
       photo_url: photoUrl?.trim() || null,
-      prefix: prefix?.trim(),
+      prefix: finalPrefix,
       unit: unit?.trim(),
       min_patente: minPatente?.trim(),
     }

@@ -53,13 +53,6 @@ const PATENTES = [
   'Recruta',
 ]
 
-const PRESET_IMAGES = [
-  { label: 'Viatura Patrulha / Sedan', url: 'https://images.unsplash.com/photo-1600706432502-75a0e286b92a?w=500&q=80' },
-  { label: 'Viatura SUV / Força Tática', url: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=500&q=80' },
-  { label: 'Blindado / Caveirão', url: 'https://images.unsplash.com/photo-1506015391300-4802dc74de2e?w=500&q=80' },
-  { label: 'Motocicleta ROCAM', url: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=500&q=80' },
-]
-
 export default function ViaturaPage() {
   const { profile, session } = useAuth()
   const [items, setItems] = useState<Viatura[]>([])
@@ -77,7 +70,6 @@ export default function ViaturaPage() {
   // Form State
   const [name, setName] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
-  const [prefix, setPrefix] = useState('')
   const [unit, setUnit] = useState('Geral')
   const [minPatente, setMinPatente] = useState('Recruta')
   const [submitting, setSubmitting] = useState(false)
@@ -109,7 +101,6 @@ export default function ViaturaPage() {
     setEditingItem(null)
     setName('')
     setPhotoUrl('')
-    setPrefix('')
     setUnit('Geral')
     setMinPatente('Recruta')
     setError(null)
@@ -120,7 +111,6 @@ export default function ViaturaPage() {
     setEditingItem(item)
     setName(item.name)
     setPhotoUrl(item.photoUrl || '')
-    setPrefix(item.prefix)
     setUnit(item.unit)
     setMinPatente(item.minPatente)
     setError(null)
@@ -151,8 +141,8 @@ export default function ViaturaPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !prefix.trim() || !unit || !minPatente) {
-      setError('Preencha os campos obrigatórios (Modelo, Prefixo, Unidade, Patente Mínima).')
+    if (!name.trim() || !photoUrl.trim() || !unit || !minPatente) {
+      setError('Preencha os campos obrigatórios (Modelo, Link da Imagem, Divisão, Patente Mínima).')
       return
     }
 
@@ -163,8 +153,8 @@ export default function ViaturaPage() {
       action: editingItem ? 'edit' : 'create',
       id: editingItem?.id,
       name: name.trim(),
-      photoUrl: photoUrl.trim() || null,
-      prefix: prefix.trim(),
+      photoUrl: photoUrl.trim(),
+      prefix: editingItem?.prefix || undefined, // handled by server/kept on edit
       unit,
       minPatente
     }
@@ -195,8 +185,7 @@ export default function ViaturaPage() {
 
   // Filtragem
   const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
-                          item.prefix.toLowerCase().includes(search.toLowerCase())
+    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase())
     const matchesUnit = filterUnit === 'Todas' || item.unit === filterUnit
     return matchesSearch && matchesUnit
   })
@@ -249,7 +238,7 @@ export default function ViaturaPage() {
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Pesquisar por modelo ou prefixo..."
+            placeholder="Pesquisar por modelo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-secondary/20 rounded-xl border border-border/50 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
@@ -404,18 +393,6 @@ export default function ViaturaPage() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Prefixo da Viatura *</label>
-                <input
-                  type="text"
-                  placeholder="Ex: ROMU-01"
-                  value={prefix}
-                  onChange={(e) => setPrefix(e.target.value)}
-                  className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-                  required
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-foreground">Divisão Responsável *</label>
@@ -444,33 +421,16 @@ export default function ViaturaPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground block">Foto da Viatura</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground block">Foto da Viatura *</label>
                 <input
-                  type="text"
-                  placeholder="URL da Foto (Ex: https://...)"
+                  type="url"
+                  placeholder="Link (URL) da Imagem Real (Ex: https://...)"
                   value={photoUrl}
                   onChange={(e) => setPhotoUrl(e.target.value)}
                   className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
+                  required
                 />
-                
-                <div>
-                  <span className="text-[10px] text-muted-foreground block mb-1.5">Ou selecione uma foto padrão de exemplo:</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PRESET_IMAGES.map((img) => (
-                      <button
-                        key={img.label}
-                        type="button"
-                        onClick={() => setPhotoUrl(img.url)}
-                        className={`px-2 py-1.5 text-[10px] text-left border rounded-lg hover:bg-secondary/40 transition-colors truncate ${
-                          photoUrl === img.url ? 'border-primary bg-primary/5 text-primary' : 'border-border/40'
-                        }`}
-                      >
-                        {img.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               <div className="flex items-center gap-3 pt-6 border-t border-border/10 mt-6">
