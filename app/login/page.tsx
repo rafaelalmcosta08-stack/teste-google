@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { LogIn, ArrowRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { SiteBackground } from '@/components/site-background'
@@ -9,7 +11,14 @@ import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 
 export default function LoginPage() {
+  const router = useRouter()
   const { user, profile, loading } = useAuth()
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/painel')
+    }
+  }, [user, loading, router])
 
   const displayName = profile?.qra || profile?.username || user?.email?.split('@')[0] || 'Policial'
 

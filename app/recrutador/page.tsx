@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { UserPlus, Shield, LogOut, ArrowRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { SiteBackground } from '@/components/site-background'
@@ -9,9 +11,21 @@ import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 
 export default function RecrutadorPage() {
+  const router = useRouter()
   const { user, profile, loading, logout } = useAuth()
 
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/painel')
+    }
+  }, [user, loading, router])
+
   const displayName = profile?.qra || profile?.username || user?.email?.split('@')[0] || 'Policial'
+
+  async function handleLogout() {
+    await logout()
+    router.push('/')
+  }
 
   return (
     <>
@@ -49,7 +63,7 @@ export default function RecrutadorPage() {
                 <Button
                   id="btn-cadastro-logout"
                   variant="outline"
-                  onClick={() => logout()}
+                  onClick={handleLogout}
                   className="w-full flex items-center justify-center gap-2 text-red-400 border-red-500/20 hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
                 >
                   <LogOut className="h-4 w-4" />
