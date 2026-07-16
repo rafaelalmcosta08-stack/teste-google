@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { PageTransition } from '@/components/page-transition'
 import { SiteFooter } from '@/components/site-footer'
 import { AuthProvider } from '@/lib/auth-context'
+import { SiteBackground } from '@/components/site-background'
 import './globals.css'
 
 const geistSans = Geist({
@@ -16,9 +17,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Polícia Legacy | Departamento de Polícia',
+  title: 'Polícia Aspect | Departamento de Polícia',
   description:
-    'Departamento de Polícia Legacy - Servir e Proteger. Manual de Estudo TAFF, unidades e recrutamento.',
+    'Departamento de Polícia Aspect - Servir e Proteger. Manual de Estudo TAFF, unidades e recrutamento.',
   generator: 'v0.app',
 }
 
@@ -36,6 +37,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable}`} style={{ backgroundColor: "transparent" }}>
       <body className="font-sans antialiased" style={{ backgroundColor: "transparent" }}>
         <AuthProvider>
+          <SiteBackground />
           <PageTransition>{children}</PageTransition>
           <SiteFooter />
         </AuthProvider>

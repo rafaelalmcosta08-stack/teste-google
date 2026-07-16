@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { Sparkles, ChevronDown } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { SiteBackground } from '@/components/site-background'
 import { UnitsSection } from '@/components/units-section'
 import { useAuth } from '@/lib/auth-context'
 
@@ -11,21 +10,19 @@ export default function HomePage() {
   const { user } = useAuth()
   return (
     <>
-      <SiteBackground />
       <SiteHeader />
 
       <main className="pt-16">
         {/* Hero */}
         <section className="relative flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-6 py-20 text-center sm:px-10 lg:px-16">
 
-
           <h1 className="max-w-4xl text-5xl font-bold leading-[1.05] tracking-tight text-balance sm:text-7xl">
             <span className="text-white">Departamento de Polícia</span>
             <br />
-            <span className="text-white">Legacy</span>
+            <span className="text-white">Aspect</span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground">
+          <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-white">
             Servir e Proteger. Junte-se a nós na missão de garantir a segurança e o bem-estar de
             todos os cidadãos.
           </p>
@@ -62,7 +59,7 @@ export default function HomePage() {
           <Link
             href="#unidades"
             aria-label="Ver unidades"
-            className="absolute bottom-8 text-muted-foreground transition-colors hover:text-foreground"
+            className="absolute bottom-8 text-white/70 transition-colors hover:text-white"
           >
             <ChevronDown className="h-6 w-6 animate-bounce" />
           </Link>

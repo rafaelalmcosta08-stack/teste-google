@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { PainelHeader } from '@/components/painel-header'
 import { PainelSidebar } from '@/components/painel-sidebar'
-import { SiteBackground } from '@/components/site-background'
 import { FuturisticLoader } from '@/components/futuristic-loader'
 
 export default function PainelLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +29,6 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-transparent text-foreground">
-      <SiteBackground hasSidebar />
       <PainelSidebar />
       <div className="relative flex min-h-screen flex-col pl-[70px]">
         <PainelHeader />

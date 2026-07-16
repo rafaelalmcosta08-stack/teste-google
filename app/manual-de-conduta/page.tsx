@@ -11,7 +11,6 @@ import {
   Search,
 } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { SiteBackground } from '@/components/site-background'
 import {
   Accordion,
   AccordionContent,
@@ -25,7 +24,7 @@ const condutaSections = [
     titulo: '1. Hierarquia e Disciplina',
     icon: Users,
     resumo: 'A base de toda corporação militarizada reside no respeito à cadeia de comando e na disciplina rígida.',
-    conteudo: `A hierarquia e a disciplina são as colunas de sustentação da Polícia Legacy. Qualquer quebra desses pilares constitui infração grave sujeita a medidas disciplinares.
+    conteudo: `A hierarquia e a disciplina são as colunas de sustentação da Polícia Aspect. Qualquer quebra desses pilares constitui infração grave sujeita a medidas disciplinares.
 
 • Respeito à Patente: Todo oficial deve demonstrar deferência e respeito aos superiores de patente. Prestar a devida continência quando em fardamento.
 • Cadeia de Comando: Ordens legítimas de superiores imediatos devem ser acatadas prontamente e executadas fielmente. Em caso de ordens manifestamente ilegais, o subordinado deve reportar diretamente à Corregedoria.
@@ -36,7 +35,7 @@ const condutaSections = [
     titulo: '2. Postura e Comportamento',
     icon: Eye,
     resumo: 'Como representante do Estado, a postura do oficial reflete a imagem de toda a corporação.',
-    conteudo: `Cada policial é o espelho da Polícia Legacy perante os cidadãos. Espera-se uma conduta exemplar a todo momento.
+    conteudo: `Cada policial é o espelho da Polícia Aspect perante os cidadãos. Espera-se uma conduta exemplar a todo momento.
 
 • Linguagem Adequada: É expressamente proibido o uso de termos de baixo calão, gírias excessivas ou linguagem ofensiva durante o serviço ou modulação.
 • Preservação da Vida: O principal objetivo de qualquer oficial é a preservação da vida e integridade física de todos, inclusive dos próprios suspeitos. A força letal deve ser sempre o último recurso.
@@ -73,7 +72,7 @@ const condutaSections = [
 
 • Direitos do Detido: Ao dar voz de prisão a um indivíduo, você deve ler seus direitos constitucionais imediatamente: "Você tem o direito de permanecer em silêncio, tudo o que disser poderá e será usado contra você no tribunal. Você tem o direito a um advogado e a uma ligação física."
 • Revista Pessoal: Apenas realize revistas pessoais quando houver flagrante delito, atitude suspeita confirmada via teste de resíduo, ou em buscas justificadas por mandado.
-• Registro de Ocorrência: Toda detenção ou apreensão de material ilícito deve ser minuciosamente registrada no sistema de administração da Polícia Legacy pelo oficial responsável.`
+• Registro de Ocorrência: Toda detenção ou apreensão de material ilícito deve ser minuciosamente registrada no sistema de administração da Polícia Aspect pelo oficial responsável.`
   },
   {
     id: 'punicoes',
@@ -85,7 +84,7 @@ const condutaSections = [
 • Advertência Verbal: Para pequenos deslizes de conduta ou imperícia leve.
 • Advertência por Escrito: Registro oficial na ficha funcional em caso de reincidência de conduta indevida ou desobediência a normas básicas.
 • Afastamento Temporário: Suspensão do direito de patrulhar e portar armamento por período de 1 a 7 dias, dependendo da gravidade.
-• Exoneração com Desonra: Desligamento permanente dos quadros da Polícia Legacy em casos de corrupção, abuso grave de poder, traição ou infrações reiteradas sem recuperação.`
+• Exoneração com Desonra: Desligamento permanente dos quadros da Polícia Aspect em casos de corrupção, abuso grave de poder, traição ou infrações reiteradas sem recuperação.`
   }
 ]
 
@@ -101,7 +100,6 @@ export default function ManualCondutaPage() {
 
   return (
     <>
-      <SiteBackground />
       <SiteHeader />
 
       <main className="mx-auto max-w-[1600px] px-6 pb-24 pt-28 sm:px-10 lg:px-16">
@@ -118,7 +116,7 @@ export default function ManualCondutaPage() {
             Manual de Conduta Policial
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-pretty leading-relaxed text-muted-foreground">
-            Diretrizes oficiais de comportamento, ética, disciplina e procedimentos táticos exigidos de todos os agentes do Departamento de Polícia Legacy.
+            Diretrizes oficiais de comportamento, ética, disciplina e procedimentos táticos exigidos de todos os agentes do Departamento de Polícia Aspect.
           </p>
 
           {/* Search Box */}

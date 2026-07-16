@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function login(username: string, password: string): Promise<{ error: string | null }> {
     if (!supabase) return { error: 'Supabase não configurado.' }
 
-    const email = `${username.toLowerCase().trim()}@policialegacy.internal`
+    const email = `${username.toLowerCase().trim()}@policiaaspect.internal`
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {

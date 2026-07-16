@@ -13,7 +13,6 @@ import {
   Scale
 } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { SiteBackground } from '@/components/site-background'
 
 type Crime = {
   artigo: string
@@ -303,7 +302,6 @@ export default function CodigoPenalPage() {
 
   return (
     <>
-      <SiteBackground />
       <SiteHeader />
 
       <main className="mx-auto max-w-[1600px] px-6 pb-24 pt-28 sm:px-10 lg:px-16">

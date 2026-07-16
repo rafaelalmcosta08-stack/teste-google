@@ -8,8 +8,14 @@ export function PainelHeader() {
       <div className="flex h-20 items-center justify-between px-6 sm:px-10 lg:px-16">
         {/* Logo */}
         <Link href="/painel" className="flex items-center gap-2.5">
+          <img
+            src="https://res.cloudinary.com/epo1w9hl/image/upload/v1784175681/POLICIAASPECT_copiar_qdvopk.png"
+            alt="Logo"
+            className="h-7 w-7 object-contain"
+            referrerPolicy="no-referrer"
+          />
           <span className="text-base font-bold tracking-tight text-foreground transition-opacity hover:opacity-90">
-            Polícia Legacy
+            Polícia Aspect
           </span>
         </Link>
         

@@ -15,7 +15,6 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { SiteBackground } from '@/components/site-background'
 import {
   Accordion,
   AccordionContent,
@@ -40,7 +39,6 @@ export default function ManualPage() {
 
   return (
     <>
-      <SiteBackground />
       <SiteHeader />
 
       <main className="mx-auto max-w-[1600px] px-6 pb-24 pt-28 sm:px-10 lg:px-16">

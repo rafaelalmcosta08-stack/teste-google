@@ -66,6 +66,7 @@ export function hasCanalAccess(profile: any, canal: string): boolean {
   if (profile.role === 'admin') return true
 
   const cargos: string[] = profile.cargo || []
+  const isAltoComando = cargos.includes('Alto Comando')
   const unidade: string = profile.unidade_operacional || ''
 
   switch (canal) {
@@ -76,17 +77,17 @@ export function hasCanalAccess(profile: any, canal: string): boolean {
         ['Instrutor Treinamento Operacional', 'Instrutor De Cursos e Recrutamentos', 'Supervisor APM', 'Diretor APM', 'Alto Comando'].includes(c)
       )
     case 'bope':
-      return unidade.toUpperCase() === 'BOPE'
+      return isAltoComando || unidade.toUpperCase() === 'BOPE'
     case 'core':
-      return unidade.toUpperCase() === 'CORE'
+      return isAltoComando || unidade.toUpperCase() === 'CORE'
     case 'gaep':
-      return unidade.toUpperCase() === 'GAEP'
+      return isAltoComando || unidade.toUpperCase() === 'GAEP'
     case 'gtm':
-      return unidade.toUpperCase() === 'GTM'
+      return isAltoComando || unidade.toUpperCase() === 'GTM'
     case 'gar':
-      return unidade.toUpperCase() === 'GAR'
+      return isAltoComando || unidade.toUpperCase() === 'GAR'
     case 'alto-comando':
-      return cargos.some((c: string) => ['Alto Comando'].includes(c))
+      return isAltoComando
     default:
       return false
   }

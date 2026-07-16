@@ -12,7 +12,6 @@ import {
   FileText,
   Map,
   BookOpen,
-  Shield,
   LogOut,
   Megaphone,
   Home,
@@ -20,6 +19,7 @@ import {
   Car,
   Lock,
   Activity,
+  Shield,
 } from 'lucide-react'
 
 export function PainelSidebar() {
@@ -42,7 +42,6 @@ export function PainelSidebar() {
     {
       title: 'Informação Policial',
       items: [
-        { label: 'Chat Geral', href: '/painel/chat/geral', icon: MessageSquare, visible: true },
         { label: 'Hierarquia', href: '/painel/hierarquia', icon: Award, visible: true },
         { label: 'Fardamento', href: '/painel/fardamento', icon: Shirt, visible: true },
         { label: 'Armamento', href: '/painel/armamento', icon: Crosshair, visible: true },
@@ -53,7 +52,6 @@ export function PainelSidebar() {
     {
       title: 'Formação Policial',
       items: [
-        { label: 'Chat APM', href: '/painel/chat/apm', icon: MessageSquare, visible: hasApmAccess },
         { label: 'Cursos', href: '/painel/cursos', icon: GraduationCap, visible: true },
         { label: 'Editais', href: '/painel/editais', icon: FileText, visible: true },
         { label: 'Manual de Conduta', href: '/painel/manual-de-conduta', icon: BookOpen, visible: true },
@@ -64,38 +62,37 @@ export function PainelSidebar() {
     {
       title: 'BOPE',
       items: [
-        { label: 'Chat BOPE', href: '/painel/chat/bope', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'BOPE' }
+        { label: 'Chat BOPE', href: '/painel/chat/bope', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'BOPE' }
       ]
     },
     {
       title: 'CORE',
       items: [
-        { label: 'Chat CORE', href: '/painel/chat/core', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'CORE' }
+        { label: 'Chat CORE', href: '/painel/chat/core', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'CORE' }
       ]
     },
     {
       title: 'GAEP',
       items: [
-        { label: 'Chat GAEP', href: '/painel/chat/gaep', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'GAEP' }
+        { label: 'Chat GAEP', href: '/painel/chat/gaep', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'GAEP' }
       ]
     },
     {
       title: 'GTM',
       items: [
-        { label: 'Chat GTM', href: '/painel/chat/gtm', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'GTM' }
+        { label: 'Chat GTM', href: '/painel/chat/gtm', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'GTM' }
       ]
     },
     {
       title: 'GAR',
       items: [
-        { label: 'Chat GAR', href: '/painel/chat/gar', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'GAR' }
+        { label: 'Chat GAR', href: '/painel/chat/gar', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'GAR' }
       ]
     },
     {
       title: 'Alto Comando',
       items: [
         { label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone, visible: isAltoComando },
-        { label: 'Chat Alto Comando', href: '/painel/chat/alto-comando', icon: MessageSquare, visible: isAltoComando },
       ]
     },
     {
@@ -132,10 +129,15 @@ export function PainelSidebar() {
         <Link
           href="/painel"
           className="flex items-center px-4 mb-6 outline-none shrink-0"
-          title="Polícia Legacy"
+          title="Polícia Aspect"
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-inner">
-            <Shield className="h-5 w-5" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-transparent">
+            <img
+              src="https://res.cloudinary.com/epo1w9hl/image/upload/v1784175681/POLICIAASPECT_copiar_qdvopk.png"
+              alt="Polícia Aspect Logo"
+              className="h-10 w-10 object-contain hover:scale-110 transition-transform duration-300"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <span
             className={`ml-3 text-sm font-bold tracking-tight text-foreground transition-all duration-300 ${

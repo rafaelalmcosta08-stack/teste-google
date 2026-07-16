@@ -37,7 +37,7 @@ export default function PublicarAvisoPage() {
           </div>
           <h1 className="text-2xl font-bold">Acesso Restrito</h1>
           <p className="text-sm text-muted-foreground max-w-md">
-            Esta seção é exclusiva para membros do Alto Comando do Departamento de Polícia Legacy.
+            Esta seção é exclusiva para membros do Alto Comando do Departamento de Polícia Aspect.
           </p>
         </div>
       </main>

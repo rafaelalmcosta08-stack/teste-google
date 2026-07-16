@@ -48,7 +48,7 @@ export const units: Unit[] = [
     sigla: 'BOPE',
     nome: 'Batalhão de Operações Policiais Especiais',
     descricao:
-      'Unidade de elite responsável por ações grandes na cidade de Legacy. Especializada em operações de alto risco, resgate de reféns e situações de crise que exigem máxima força e precisão.',
+      'Unidade de elite responsável por ações grandes na cidade de Aspect. Especializada em operações de alto risco, resgate de reféns e situações de crise que exigem máxima força e precisão.',
     icon: Target,
     image: '/images/unit-coe.png',
   },

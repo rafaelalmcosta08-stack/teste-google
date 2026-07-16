@@ -13,9 +13,17 @@ export function SiteFooter() {
     <footer className="border-t border-border/20 bg-background/30 py-16">
       <div className="mx-auto max-w-[1600px] px-6 sm:px-10 lg:px-16">
         <div className="flex flex-col items-center text-center">
-          {/* Title and Tagline */}
+          {/* Logo, Title and Tagline */}
+          <div className="mb-4">
+            <img
+              src="https://res.cloudinary.com/epo1w9hl/image/upload/v1784175681/POLICIAASPECT_copiar_qdvopk.png"
+              alt="Polícia Aspect Logo"
+              className="h-14 w-14 object-contain mx-auto"
+              referrerPolicy="no-referrer"
+            />
+          </div>
           <h3 className="text-xl font-bold text-foreground">
-            Departamento de Polícia Legacy
+            Departamento de Polícia Aspect
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
             Servir e Proteger
@@ -45,7 +53,7 @@ export function SiteFooter() {
 
           {/* Copyright */}
           <p className="mt-8 text-xs text-muted-foreground">
-            2026 Departamento de Polícia Legacy. Todos os direitos reservados.
+            2026 Departamento de Polícia Aspect. Todos os direitos reservados.
           </p>
         </div>
       </div>

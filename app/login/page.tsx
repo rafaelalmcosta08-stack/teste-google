@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LogIn, ArrowRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
-import { SiteBackground } from '@/components/site-background'
 import { LoginForm } from '@/components/login-form'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
@@ -29,7 +28,6 @@ export default function LoginPage() {
 
   return (
     <>
-      <SiteBackground />
       <SiteHeader />
 
       <main className="flex min-h-screen items-center justify-center px-4 pt-16">

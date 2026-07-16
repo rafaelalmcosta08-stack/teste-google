@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { UserPlus, LogIn } from 'lucide-react'
+import { UserPlus, LogIn, Shield } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useAuth } from '@/lib/auth-context'
 
@@ -23,9 +23,17 @@ export function SiteHeader() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-border/10 bg-card/20 backdrop-blur-md">
       <div className="mx-auto flex h-24 max-w-[1600px] items-center justify-between gap-4 px-6 sm:px-10 lg:px-16">
-        <Link href="/" className="flex items-center gap-2.5 group">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="h-11 w-11 shrink-0 overflow-hidden flex items-center justify-center">
+            <img
+              src="https://res.cloudinary.com/epo1w9hl/image/upload/v1784175681/POLICIAASPECT_copiar_qdvopk.png"
+              alt="Polícia Aspect Logo"
+              className="h-10 w-10 object-contain group-hover:scale-110 transition-transform duration-300"
+              referrerPolicy="no-referrer"
+            />
+          </div>
           <span className="text-base font-bold tracking-tight text-white transition-colors duration-300 group-hover:text-primary-foreground/90">
-            Polícia Legacy
+            Polícia Aspect
           </span>
         </Link>
 

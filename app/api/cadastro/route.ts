@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const username = usuario.trim().toLowerCase()
-  const email = `${username}@policialegacy.internal`
+  const email = `${username}@policiaaspect.internal`
 
   // Verifica se username já está em uso (via listUsers)
   const { data: listData } = await admin.auth.admin.listUsers({ perPage: 1000 })

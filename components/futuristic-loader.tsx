@@ -79,7 +79,7 @@ export function FuturisticLoader({ message }: FuturisticLoaderProps) {
         <h2 className="text-lg font-mono font-bold tracking-widest text-primary uppercase flex items-center gap-2 mb-2">
           <Terminal className="h-4 w-4 animate-bounce" /> SYSTEM BOOT {dots}
         </h2>
-        <p className="text-xs text-muted-foreground font-mono mb-6">POLÍCIA LEGACY v3.5 - SECURE CORE</p>
+        <p className="text-xs text-muted-foreground font-mono mb-6">POLÍCIA ASPECT v3.5 - SECURE CORE</p>
 
         {/* Tactical status lines */}
         <div className="w-full bg-black/40 rounded-lg p-4 border border-white/5 font-mono text-[11px] text-primary/80 leading-relaxed text-left min-h-[90px] flex flex-col justify-end space-y-1 select-none">
