@@ -23,6 +23,49 @@ export interface Aviso {
 }
 
 async function readAvisos(): Promise<Aviso[]> {
+  const admin = getAdminClient()
+  if (admin) {
+    try {
+      const { data, error } = await admin.from('avisos').select('*')
+      if (!error && data) {
+        // Table exists! Let's check if we should migrate local data
+        if (data.length === 0) {
+          try {
+            const localContent = await fs.readFile(DATA_FILE, 'utf8')
+            const localAvisos = JSON.parse(localContent) as Aviso[]
+            if (localAvisos.length > 0) {
+              const toInsert = localAvisos.map(a => ({
+                id: a.id,
+                title: a.title,
+                content: a.content,
+                creator_id: a.creatorId,
+                creator_qra: a.creatorQra,
+                created_at: a.createdAt,
+                read_by: a.readBy || []
+              }))
+              await admin.from('avisos').insert(toInsert)
+              return localAvisos
+            }
+          } catch (_) {
+            // No local data or error reading it, ignore
+          }
+        }
+        // Map database columns back to camelCase properties
+        return data.map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          content: row.content,
+          creatorId: row.creator_id,
+          creatorQra: row.creator_qra,
+          createdAt: row.created_at || new Date().toISOString(),
+          readBy: Array.isArray(row.read_by) ? row.read_by : []
+        }))
+      }
+    } catch (err) {
+      console.error('Database avisos read error:', err)
+    }
+  }
+
   try {
     const content = await fs.readFile(DATA_FILE, 'utf8')
     return JSON.parse(content)
@@ -32,6 +75,31 @@ async function readAvisos(): Promise<Aviso[]> {
 }
 
 async function writeAvisos(avisos: Aviso[]) {
+  const admin = getAdminClient()
+  if (admin) {
+    try {
+      const toInsert = avisos.map(a => ({
+        id: a.id,
+        title: a.title,
+        content: a.content,
+        creator_id: a.creatorId,
+        creator_qra: a.creatorQra,
+        created_at: a.createdAt,
+        read_by: a.readBy || []
+      }))
+
+      const ids = avisos.map(a => a.id)
+      if (ids.length > 0) {
+        await admin.from('avisos').delete().not('id', 'in', `(${ids.join(',')})`)
+        await admin.from('avisos').upsert(toInsert)
+      } else {
+        await admin.from('avisos').delete().neq('id', 'placeholder_nonexistent')
+      }
+    } catch (err) {
+      console.error('Database avisos write error:', err)
+    }
+  }
+
   await fs.writeFile(DATA_FILE, JSON.stringify(avisos, null, 2), 'utf8')
 }
 

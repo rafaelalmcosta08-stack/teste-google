@@ -43,6 +43,61 @@ export interface Course {
 
 // Safe read helper
 async function readCourses(): Promise<Course[]> {
+  const admin = getAdminClient()
+  if (admin) {
+    try {
+      const { data, error } = await admin.from('cursos').select('*')
+      if (!error && data) {
+        if (data.length === 0) {
+          try {
+            const localContent = await fs.readFile(DATA_FILE, 'utf8')
+            const localCourses = JSON.parse(localContent) as Course[]
+            if (localCourses.length > 0) {
+              const toInsert = localCourses.map(c => ({
+                id: c.id,
+                title: c.title,
+                description: c.description,
+                requirements: c.requirements,
+                start_date: c.startDate,
+                end_date: c.endDate,
+                vagas_limit: c.vagasLimit,
+                creator_id: c.creatorId,
+                creator_qra: c.creatorQra,
+                created_at: c.createdAt,
+                instructor_id: c.instructorId,
+                instructor_qra: c.instructorQra,
+                subscribers: c.subscribers || [],
+                read_by: c.readBy || [],
+                evaluations: c.evaluations || {}
+              }))
+              await admin.from('cursos').insert(toInsert)
+              return localCourses
+            }
+          } catch (_) {}
+        }
+        return data.map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          requirements: row.requirements,
+          startDate: row.start_date,
+          endDate: row.end_date,
+          vagasLimit: row.vagas_limit,
+          creatorId: row.creator_id,
+          creatorQra: row.creator_qra,
+          createdAt: row.created_at || new Date().toISOString(),
+          instructorId: row.instructor_id,
+          instructorQra: row.instructor_qra,
+          subscribers: Array.isArray(row.subscribers) ? row.subscribers : [],
+          readBy: Array.isArray(row.read_by) ? row.read_by : [],
+          evaluations: row.evaluations || {}
+        }))
+      }
+    } catch (err) {
+      console.error('Database courses read error:', err)
+    }
+  }
+
   try {
     const content = await fs.readFile(DATA_FILE, 'utf8')
     return JSON.parse(content)
@@ -53,6 +108,39 @@ async function readCourses(): Promise<Course[]> {
 
 // Safe write helper
 async function writeCourses(courses: Course[]) {
+  const admin = getAdminClient()
+  if (admin) {
+    try {
+      const toInsert = courses.map(c => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        requirements: c.requirements,
+        start_date: c.startDate,
+        end_date: c.endDate,
+        vagas_limit: c.vagasLimit,
+        creator_id: c.creatorId,
+        creator_qra: c.creatorQra,
+        created_at: c.createdAt,
+        instructor_id: c.instructorId,
+        instructor_qra: c.instructorQra,
+        subscribers: c.subscribers || [],
+        read_by: c.readBy || [],
+        evaluations: c.evaluations || {}
+      }))
+
+      const ids = courses.map(c => c.id)
+      if (ids.length > 0) {
+        await admin.from('cursos').delete().not('id', 'in', `(${ids.join(',')})`)
+        await admin.from('cursos').upsert(toInsert)
+      } else {
+        await admin.from('cursos').delete().neq('id', 'placeholder_nonexistent')
+      }
+    } catch (err) {
+      console.error('Database courses write error:', err)
+    }
+  }
+
   await fs.writeFile(DATA_FILE, JSON.stringify(courses, null, 2), 'utf8')
 }
 

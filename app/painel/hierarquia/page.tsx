@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
+import { motion, AnimatePresence } from 'motion/react'
 import { Input } from '@/components/ui/input'
 import {
   Award,
@@ -142,6 +143,27 @@ export default function HierarquiaPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
+  
+  // Controle de rolagem para baixo
+  const [showScrollIndicator, setShowScrollIndicator] = useState(true)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Oculta o indicador ao scrollar mais de 60px para baixo
+      if (window.scrollY > 60) {
+        setShowScrollIndicator(false)
+      } else {
+        setShowScrollIndicator(true)
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToHierarchyList = () => {
+    listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   
   // Controle de qual dropdown de célula está aberto
   const [activeDropdown, setActiveDropdown] = useState<{ userId: string; field: string } | null>(null)
@@ -762,7 +784,7 @@ export default function HierarquiaPage() {
       )}
 
       {/* 2. SEÇÃO DE HIERARQUIA POLICIAL (Visível para todos) */}
-      <hr className="my-16 border-border/20" />
+      <hr ref={listRef} className="my-16 border-border/20" />
 
       <div className="mb-12">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
@@ -1238,6 +1260,35 @@ export default function HierarquiaPage() {
           )
         })()
       )}
+
+      {/* Indicador de rolagem para ver a lista completa */}
+      <AnimatePresence>
+        {showScrollIndicator && (
+          <motion.div
+            initial={{ opacity: 0, y: 15, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 15, x: '-50%' }}
+            transition={{ duration: 0.3 }}
+            onClick={scrollToHierarchyList}
+            className="fixed bottom-8 left-1/2 z-40 flex flex-col items-center gap-1.5 cursor-pointer select-none group bg-background/80 hover:bg-background/95 backdrop-blur-md px-4 py-2.5 rounded-full border border-border/60 shadow-lg shadow-black/30 hover:border-primary/50 transition-colors"
+          >
+            <span className="text-[11px] font-semibold tracking-wide text-muted-foreground group-hover:text-foreground transition-colors uppercase font-sans">
+              Veja a hierarquia completa
+            </span>
+            <motion.div
+              animate={{ y: [0, 4, 0] }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-primary group-hover:bg-primary/20 transition-colors"
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   )
 }

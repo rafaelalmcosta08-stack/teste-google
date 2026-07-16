@@ -25,6 +25,53 @@ export interface ChatMessage {
 }
 
 async function readMessages(): Promise<ChatMessage[]> {
+  const admin = getAdminClient()
+  if (admin) {
+    try {
+      const { data, error } = await admin
+        .from('chats')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(5000)
+      if (!error && data) {
+        if (data.length === 0) {
+          try {
+            const localContent = await fs.readFile(DATA_FILE, 'utf8')
+            const localMessages = JSON.parse(localContent) as ChatMessage[]
+            if (localMessages.length > 0) {
+              const toInsert = localMessages.map(m => ({
+                id: m.id,
+                canal: m.canal,
+                user_id: m.userId,
+                username: m.username,
+                qra: m.qra,
+                patente: m.patente,
+                cargo: m.cargo,
+                content: m.content,
+                created_at: m.createdAt
+              }))
+              await admin.from('chats').insert(toInsert)
+              return localMessages
+            }
+          } catch (_) {}
+        }
+        return data.map((row: any) => ({
+          id: row.id,
+          canal: row.canal,
+          userId: row.user_id,
+          username: row.username,
+          qra: row.qra,
+          patente: row.patente,
+          cargo: row.cargo,
+          content: row.content,
+          createdAt: row.created_at || new Date().toISOString()
+        }))
+      }
+    } catch (err) {
+      console.error('Database chats read error:', err)
+    }
+  }
+
   try {
     const content = await fs.readFile(DATA_FILE, 'utf8')
     return JSON.parse(content)
@@ -34,6 +81,29 @@ async function readMessages(): Promise<ChatMessage[]> {
 }
 
 async function writeMessages(messages: ChatMessage[]) {
+  const admin = getAdminClient()
+  if (admin) {
+    try {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage) {
+        const toUpsert = {
+          id: lastMessage.id,
+          canal: lastMessage.canal,
+          user_id: lastMessage.userId,
+          username: lastMessage.username,
+          qra: lastMessage.qra,
+          patente: lastMessage.patente,
+          cargo: lastMessage.cargo,
+          content: lastMessage.content,
+          created_at: lastMessage.createdAt
+        }
+        await admin.from('chats').upsert(toUpsert)
+      }
+    } catch (err) {
+      console.error('Database chats write error:', err)
+    }
+  }
+
   await fs.writeFile(DATA_FILE, JSON.stringify(messages, null, 2), 'utf8')
 }
 

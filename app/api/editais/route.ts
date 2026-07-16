@@ -38,6 +38,55 @@ export interface Edital {
 }
 
 async function readEditais(): Promise<Edital[]> {
+  const admin = getAdminClient()
+  if (admin) {
+    try {
+      const { data, error } = await admin.from('editais').select('*')
+      if (!error && data) {
+        if (data.length === 0) {
+          try {
+            const localContent = await fs.readFile(DATA_FILE, 'utf8')
+            const localEditais = JSON.parse(localContent) as Edital[]
+            if (localEditais.length > 0) {
+              const toInsert = localEditais.map(e => ({
+                id: e.id,
+                title: e.title,
+                description: e.description,
+                requirements: e.requirements,
+                unidade: e.unidade,
+                link_formulario: e.linkFormulario,
+                end_date: e.endDate,
+                creator_id: e.creatorId,
+                creator_qra: e.creatorQra,
+                created_at: e.createdAt,
+                subscribers: e.subscribers || [],
+                evaluations: e.evaluations || {}
+              }))
+              await admin.from('editais').insert(toInsert)
+              return localEditais
+            }
+          } catch (_) {}
+        }
+        return data.map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          requirements: row.requirements,
+          unidade: row.unidade as any,
+          linkFormulario: row.link_formulario,
+          endDate: row.end_date,
+          creatorId: row.creator_id,
+          creatorQra: row.creator_qra,
+          createdAt: row.created_at || new Date().toISOString(),
+          subscribers: Array.isArray(row.subscribers) ? row.subscribers : [],
+          evaluations: row.evaluations || {}
+        }))
+      }
+    } catch (err) {
+      console.error('Database editais read error:', err)
+    }
+  }
+
   try {
     const content = await fs.readFile(DATA_FILE, 'utf8')
     return JSON.parse(content)
@@ -47,6 +96,36 @@ async function readEditais(): Promise<Edital[]> {
 }
 
 async function writeEditais(editais: Edital[]) {
+  const admin = getAdminClient()
+  if (admin) {
+    try {
+      const toInsert = editais.map(e => ({
+        id: e.id,
+        title: e.title,
+        description: e.description,
+        requirements: e.requirements,
+        unidade: e.unidade,
+        link_formulario: e.linkFormulario,
+        end_date: e.endDate,
+        creator_id: e.creatorId,
+        creator_qra: e.creatorQra,
+        created_at: e.createdAt,
+        subscribers: e.subscribers || [],
+        evaluations: e.evaluations || {}
+      }))
+
+      const ids = editais.map(e => e.id)
+      if (ids.length > 0) {
+        await admin.from('editais').delete().not('id', 'in', `(${ids.join(',')})`)
+        await admin.from('editais').upsert(toInsert)
+      } else {
+        await admin.from('editais').delete().neq('id', 'placeholder_nonexistent')
+      }
+    } catch (err) {
+      console.error('Database editais write error:', err)
+    }
+  }
+
   await fs.writeFile(DATA_FILE, JSON.stringify(editais, null, 2), 'utf8')
 }
 

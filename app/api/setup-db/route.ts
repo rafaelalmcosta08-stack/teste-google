@@ -67,6 +67,78 @@ CREATE POLICY "admin_delete"
 GRANT ALL ON public.profiles TO service_role;
 GRANT ALL ON public.profiles TO authenticated;
 GRANT ALL ON public.profiles TO anon;
+
+-- Tabelas adicionais para persistência de dados
+CREATE TABLE IF NOT EXISTS public.avisos (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  creator_id UUID NOT NULL,
+  creator_qra TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  read_by JSONB NOT NULL DEFAULT '[]'::jsonb
+);
+ALTER TABLE public.avisos ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.avisos TO service_role;
+GRANT ALL ON public.avisos TO authenticated;
+GRANT ALL ON public.avisos TO anon;
+
+CREATE TABLE IF NOT EXISTS public.cursos (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  requirements TEXT,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  vagas_limit INTEGER NOT NULL,
+  creator_id UUID NOT NULL,
+  creator_qra TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  instructor_id UUID NOT NULL,
+  instructor_qra TEXT,
+  subscribers JSONB NOT NULL DEFAULT '[]'::jsonb,
+  read_by JSONB NOT NULL DEFAULT '[]'::jsonb,
+  evaluations JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+ALTER TABLE public.cursos ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.cursos TO service_role;
+GRANT ALL ON public.cursos TO authenticated;
+GRANT ALL ON public.cursos TO anon;
+
+CREATE TABLE IF NOT EXISTS public.editais (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  requirements TEXT,
+  unidade TEXT NOT NULL,
+  link_formulario TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  creator_id UUID NOT NULL,
+  creator_qra TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  subscribers JSONB NOT NULL DEFAULT '[]'::jsonb,
+  evaluations JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+ALTER TABLE public.editais ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.editais TO service_role;
+GRANT ALL ON public.editais TO authenticated;
+GRANT ALL ON public.editais TO anon;
+
+CREATE TABLE IF NOT EXISTS public.chats (
+  id TEXT PRIMARY KEY,
+  canal TEXT NOT NULL,
+  user_id UUID NOT NULL,
+  username TEXT NOT NULL,
+  qra TEXT NOT NULL,
+  patente TEXT NOT NULL,
+  cargo TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.chats TO service_role;
+GRANT ALL ON public.chats TO authenticated;
+GRANT ALL ON public.chats TO anon;
 `
 
 export async function GET(req: NextRequest) {
