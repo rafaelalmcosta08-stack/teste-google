@@ -400,6 +400,14 @@ export default function ArmamentoPage() {
                               pats = [item.minPatente || 'Recruta']
                             }
                             
+                            if (pats.includes('ALL_BY_UNIT')) {
+                              return (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                  Toda a Hierarquia da Unidade
+                                </span>
+                              )
+                            }
+                            
                             if (pats.length === PATENTES.length) {
                               return (
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary border border-primary/15">
@@ -428,7 +436,7 @@ export default function ArmamentoPage() {
                             } catch (_) {
                               pats = []
                             }
-                            if (pats.length > 4 && pats.length !== PATENTES.length) {
+                            if (!pats.includes('ALL_BY_UNIT') && pats.length > 4 && pats.length !== PATENTES.length) {
                               return (
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-secondary/50 text-muted-foreground">
                                   +{pats.length - 4} mais
@@ -579,30 +587,59 @@ export default function ArmamentoPage() {
                       }
                     }}
                     className="text-[10px] text-primary hover:underline font-bold"
+                    disabled={selectedPatentes.includes('ALL_BY_UNIT')}
                   >
                     {selectedPatentes.length === PATENTES.length ? 'Desmarcar Todos' : 'Marcar Todos'}
                   </button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1.5">
-                  {PATENTES.map(pat => {
-                    const active = selectedPatentes.includes(pat)
-                    return (
-                      <button
-                        key={pat}
-                        type="button"
-                        onClick={() => handlePatenteToggle(pat)}
-                        className={`px-2 py-1 text-[10px] rounded border text-left transition-colors truncate flex items-center gap-1.5 ${
-                          active 
-                            ? 'bg-primary/10 border-primary text-primary font-bold' 
-                            : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40'
-                        }`}
-                      >
-                        <div className={`h-2 w-2 rounded-full shrink-0 ${active ? 'bg-primary' : 'bg-transparent border border-border'}`} />
-                        {pat}
-                      </button>
-                    )
-                  })}
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedPatentes.includes('ALL_BY_UNIT')) {
+                      setSelectedPatentes(prev => prev.filter(p => p !== 'ALL_BY_UNIT'))
+                    } else {
+                      setSelectedPatentes(['ALL_BY_UNIT'])
+                    }
+                  }}
+                  className={`w-full p-2.5 rounded-lg border text-left text-xs transition-colors mb-2.5 flex items-center justify-between ${
+                    selectedPatentes.includes('ALL_BY_UNIT')
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold'
+                      : 'bg-secondary/10 border-border/40 text-muted-foreground hover:bg-secondary/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 ${
+                      selectedPatentes.includes('ALL_BY_UNIT') ? 'border-amber-400 bg-amber-400 text-black' : 'border-border'
+                    }`}>
+                      {selectedPatentes.includes('ALL_BY_UNIT') && <Check className="h-3 w-3 stroke-[3]" />}
+                    </div>
+                    <span>Toda a Hierarquia da(s) Unidade(s) selecionada(s)</span>
+                  </div>
+                </button>
+
+                {!selectedPatentes.includes('ALL_BY_UNIT') && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1.5">
+                    {PATENTES.map(pat => {
+                      const active = selectedPatentes.includes(pat)
+                      return (
+                        <button
+                          key={pat}
+                          type="button"
+                          onClick={() => handlePatenteToggle(pat)}
+                          className={`px-2 py-1 text-[10px] rounded border text-left transition-colors truncate flex items-center gap-1.5 ${
+                            active 
+                              ? 'bg-primary/10 border-primary text-primary font-bold' 
+                              : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40'
+                          }`}
+                        >
+                          <div className={`h-2 w-2 rounded-full shrink-0 ${active ? 'bg-primary' : 'bg-transparent border border-border'}`} />
+                          {pat}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-6 border-t border-border/10 mt-6">

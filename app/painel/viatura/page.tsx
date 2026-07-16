@@ -11,7 +11,8 @@ import {
   Trash, 
   X, 
   AlertTriangle,
-  Users
+  Users,
+  Check
 } from 'lucide-react'
 
 interface Viatura {
@@ -71,7 +72,7 @@ export default function ViaturaPage() {
   const [name, setName] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
   const [unit, setUnit] = useState('Geral')
-  const [minPatente, setMinPatente] = useState('Recruta')
+  const [selectedPatentes, setSelectedPatentes] = useState<string[]>(['Recruta'])
   const [submitting, setSubmitting] = useState(false)
 
   const isAltoComando = profile?.cargo?.includes('Alto Comando') || profile?.role === 'admin'
@@ -102,7 +103,7 @@ export default function ViaturaPage() {
     setName('')
     setPhotoUrl('')
     setUnit('Geral')
-    setMinPatente('Recruta')
+    setSelectedPatentes(['Recruta'])
     setError(null)
     setIsModalOpen(true)
   }
@@ -112,9 +113,31 @@ export default function ViaturaPage() {
     setName(item.name)
     setPhotoUrl(item.photoUrl || '')
     setUnit(item.unit)
-    setMinPatente(item.minPatente)
+    
+    let pats: string[] = ['Recruta']
+    try {
+      if (item.minPatente && item.minPatente.startsWith('[')) {
+        pats = JSON.parse(item.minPatente)
+      } else if (item.minPatente) {
+        pats = [item.minPatente]
+      }
+    } catch (_) {
+      pats = [item.minPatente || 'Recruta']
+    }
+    setSelectedPatentes(pats)
     setError(null)
     setIsModalOpen(true)
+  }
+
+  function handlePatenteToggle(pat: string) {
+    setSelectedPatentes(prev => {
+      if (prev.includes(pat)) {
+        const updated = prev.filter(p => p !== pat)
+        return updated.length === 0 ? ['Recruta'] : updated
+      } else {
+        return [...prev, pat]
+      }
+    })
   }
 
   async function handleDelete(id: string) {
@@ -141,8 +164,8 @@ export default function ViaturaPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !photoUrl.trim() || !unit || !minPatente) {
-      setError('Preencha os campos obrigatórios (Modelo, Link da Imagem, Divisão, Patente Mínima).')
+    if (!name.trim() || !photoUrl.trim() || !unit || selectedPatentes.length === 0) {
+      setError('Preencha os campos obrigatórios: Modelo, Link da Imagem, Divisão e pelo menos uma Patente.')
       return
     }
 
@@ -156,7 +179,7 @@ export default function ViaturaPage() {
       photoUrl: photoUrl.trim(),
       prefix: editingItem?.prefix || undefined, // handled by server/kept on edit
       unit,
-      minPatente
+      minPatente: selectedPatentes
     }
 
     try {
@@ -198,12 +221,20 @@ export default function ViaturaPage() {
     const myUnit = profile?.unidade_operacional || 'Sem Efetividade'
     const unitAllowed = item.unit === 'Geral' || item.unit === myUnit
 
-    // 2. Patente Mínima (índice menor ou igual)
-    const myPatente = profile?.patente || 'Recruta'
-    const myPatenteIdx = PATENTES.indexOf(myPatente)
-    const requiredPatenteIdx = PATENTES.indexOf(item.minPatente)
+    // 2. Patente Mínima / Patentes Autorizadas
+    let pats: string[] = []
+    try {
+      if (item.minPatente && item.minPatente.startsWith('[')) {
+        pats = JSON.parse(item.minPatente)
+      } else if (item.minPatente) {
+        pats = [item.minPatente]
+      }
+    } catch (_) {
+      pats = [item.minPatente || 'Recruta']
+    }
 
-    const patenteAllowed = myPatenteIdx !== -1 && requiredPatenteIdx !== -1 && myPatenteIdx <= requiredPatenteIdx
+    const myPatente = profile?.patente || 'Recruta'
+    const patenteAllowed = pats.length === 0 || pats.includes('ALL_BY_UNIT') || pats.includes(myPatente)
 
     return unitAllowed && patenteAllowed
   }
@@ -314,16 +345,72 @@ export default function ViaturaPage() {
                     </div>
 
                     <div className="space-y-3 mt-4 border-t border-border/10 pt-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Patente para Conduzir</span>
-                        <span className="font-semibold text-foreground bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 rounded text-[11px]">
-                          {item.minPatente}+
-                        </span>
+                      <div>
+                        <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground block">Hierarquia Autorizada</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(() => {
+                            let pats: string[] = []
+                            try {
+                              if (item.minPatente && item.minPatente.startsWith('[')) {
+                                pats = JSON.parse(item.minPatente)
+                              } else if (item.minPatente) {
+                                pats = [item.minPatente]
+                              }
+                            } catch (_) {
+                              pats = [item.minPatente || 'Recruta']
+                            }
+                            
+                            if (pats.includes('ALL_BY_UNIT')) {
+                              return (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                  Toda a Hierarquia da Unidade
+                                </span>
+                              )
+                            }
+                            
+                            if (pats.length === PATENTES.length) {
+                              return (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/5 text-primary border border-primary/15">
+                                  Todas as Patentes
+                                </span>
+                              )
+                            }
+                            
+                            return pats
+                              .sort((a, b) => PATENTES.indexOf(a) - PATENTES.indexOf(b))
+                              .slice(0, 4)
+                              .map(p => (
+                                <span key={p} className="text-[10px] px-2 py-0.5 rounded bg-secondary/50 text-foreground border border-border/30">
+                                  {p}
+                                </span>
+                              ))
+                          })()}
+                          {(() => {
+                            let pats: string[] = []
+                            try {
+                              if (item.minPatente && item.minPatente.startsWith('[')) {
+                                pats = JSON.parse(item.minPatente)
+                              } else if (item.minPatente) {
+                                pats = [item.minPatente]
+                              }
+                            } catch (_) {
+                              pats = []
+                            }
+                            if (!pats.includes('ALL_BY_UNIT') && pats.length > 4 && pats.length !== PATENTES.length) {
+                              return (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-secondary/50 text-muted-foreground">
+                                  +{pats.length - 4} mais
+                                </span>
+                              )
+                            }
+                            return null
+                          })()}
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center justify-between text-xs pt-1">
                         <span className="text-muted-foreground">Uso Setorial</span>
-                        <span className="text-foreground font-medium">
+                        <span className="text-foreground font-medium text-[11px]">
                           {item.unit === 'Geral' ? 'Uso Geral da Corporação' : `Exclusivo Divisão ${item.unit}`}
                         </span>
                       </div>
@@ -373,7 +460,7 @@ export default function ViaturaPage() {
               {editingItem ? 'Editar Viatura' : 'Adicionar Viatura à Garagem'}
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
               {error && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg flex items-start gap-2">
                   <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -393,32 +480,17 @@ export default function ViaturaPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Divisão Responsável *</label>
-                  <select
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-                  >
-                    {UNIDADES.map(u => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Patente Mínima Condução *</label>
-                  <select
-                    value={minPatente}
-                    onChange={(e) => setMinPatente(e.target.value)}
-                    className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-                  >
-                    {PATENTES.map(pat => (
-                      <option key={pat} value={pat}>{pat}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Divisão Responsável *</label>
+                <select
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                  className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
+                >
+                  {UNIDADES.map(u => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1.5">
@@ -431,6 +503,74 @@ export default function ViaturaPage() {
                   className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
                   required
                 />
+              </div>
+
+              <div className="space-y-2 border-t border-border/10 pt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground block">Hierarquia / Patentes Autorizadas</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedPatentes.length === PATENTES.length) {
+                        setSelectedPatentes(['Recruta'])
+                      } else {
+                        setSelectedPatentes([...PATENTES])
+                      }
+                    }}
+                    className="text-[10px] text-primary hover:underline font-bold"
+                    disabled={selectedPatentes.includes('ALL_BY_UNIT')}
+                  >
+                    {selectedPatentes.length === PATENTES.length ? 'Desmarcar Todos' : 'Marcar Todos'}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedPatentes.includes('ALL_BY_UNIT')) {
+                      setSelectedPatentes(prev => prev.filter(p => p !== 'ALL_BY_UNIT'))
+                    } else {
+                      setSelectedPatentes(['ALL_BY_UNIT'])
+                    }
+                  }}
+                  className={`w-full p-2.5 rounded-lg border text-left text-xs transition-colors mb-2.5 flex items-center justify-between ${
+                    selectedPatentes.includes('ALL_BY_UNIT')
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold'
+                      : 'bg-secondary/10 border-border/40 text-muted-foreground hover:bg-secondary/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 ${
+                      selectedPatentes.includes('ALL_BY_UNIT') ? 'border-amber-400 bg-amber-400 text-black' : 'border-border'
+                    }`}>
+                      {selectedPatentes.includes('ALL_BY_UNIT') && <Check className="h-3 w-3 stroke-[3]" />}
+                    </div>
+                    <span>Toda a Hierarquia da(s) Unidade(s) selecionada(s)</span>
+                  </div>
+                </button>
+
+                {!selectedPatentes.includes('ALL_BY_UNIT') && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1.5">
+                    {PATENTES.map(pat => {
+                      const active = selectedPatentes.includes(pat)
+                      return (
+                        <button
+                          key={pat}
+                          type="button"
+                          onClick={() => handlePatenteToggle(pat)}
+                          className={`px-2 py-1 text-[10px] rounded border text-left transition-colors truncate flex items-center gap-1.5 ${
+                            active 
+                              ? 'bg-primary/10 border-primary text-primary font-bold' 
+                              : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40'
+                          }`}
+                        >
+                          <div className={`h-2 w-2 rounded-full shrink-0 ${active ? 'bg-primary' : 'bg-transparent border border-border'}`} />
+                          {pat}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-6 border-t border-border/10 mt-6">

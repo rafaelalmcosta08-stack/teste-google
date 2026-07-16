@@ -81,11 +81,12 @@ export async function POST(req: NextRequest) {
 
   if (action === 'create') {
     const { name, photoUrl, prefix, unit, minPatente } = body
-    if (!name?.trim() || !unit?.trim() || !minPatente?.trim()) {
+    if (!name?.trim() || !unit?.trim() || !minPatente) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
 
     const finalPrefix = prefix?.trim() || `VT-${Math.floor(100 + Math.random() * 900)}`
+    const minPatenteStr = Array.isArray(minPatente) ? JSON.stringify(minPatente) : String(minPatente).trim()
 
     const newViatura = {
       id: Math.random().toString(36).substring(2, 15),
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
       photo_url: photoUrl?.trim() || null,
       prefix: finalPrefix,
       unit: unit.trim(),
-      min_patente: minPatente.trim(),
+      min_patente: minPatenteStr,
       created_at: new Date().toISOString()
     }
 
@@ -112,13 +113,14 @@ export async function POST(req: NextRequest) {
     }
 
     const finalPrefix = prefix?.trim() || `VT-${Math.floor(100 + Math.random() * 900)}`
+    const minPatenteStr = Array.isArray(minPatente) ? JSON.stringify(minPatente) : minPatente ? String(minPatente).trim() : 'Recruta'
 
     const updated = {
       name: name?.trim(),
       photo_url: photoUrl?.trim() || null,
       prefix: finalPrefix,
       unit: unit?.trim(),
-      min_patente: minPatente?.trim(),
+      min_patente: minPatenteStr,
     }
 
     const { error } = await admin.from('viaturas').update(updated).eq('id', id)
