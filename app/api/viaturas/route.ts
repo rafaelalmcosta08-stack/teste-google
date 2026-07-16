@@ -103,6 +103,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao inserir no banco de dados.' }, { status: 500 })
     }
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'CADASTRO_VIATURA',
+        targetUser: 'Geral',
+        description: `Cadastrou a viatura: "${newViatura.name}" (${newViatura.prefix})`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for viatura create:', e)
+    }
+
     return NextResponse.json({ success: true, viatura: newViatura })
   }
 
@@ -128,6 +142,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao atualizar viatura.' }, { status: 500 })
     }
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EDICAO_VIATURA',
+        targetUser: 'Geral',
+        description: `Editou a viatura: "${updated.name}" (${updated.prefix})`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for viatura edit:', e)
+    }
+
     return NextResponse.json({ success: true })
   }
 
@@ -140,6 +168,20 @@ export async function POST(req: NextRequest) {
     const { error } = await admin.from('viaturas').delete().eq('id', id)
     if (error) {
       return NextResponse.json({ error: 'Erro ao excluir viatura.' }, { status: 500 })
+    }
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EXCLUSAO_VIATURA',
+        targetUser: 'Geral',
+        description: `Excluiu a viatura com ID: ${id}`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for viatura delete:', e)
     }
 
     return NextResponse.json({ success: true })

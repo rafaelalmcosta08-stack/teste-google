@@ -90,6 +90,8 @@ export function PainelSidebar() {
     {
       title: 'Administração do Site',
       items: [
+        { label: 'Visão Geral', href: '/painel/visao-geral', icon: Activity, visible: isAltoComando },
+        { label: 'Logs', href: '/painel/logs', icon: FileText, visible: isAltoComando },
         { label: 'Administração', href: '/painel/administracao', icon: Shield, visible: isAdmin }
       ]
     }

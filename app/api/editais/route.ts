@@ -257,6 +257,20 @@ export async function POST(req: NextRequest) {
     await writeEditais(editais)
     await broadcastUpdate()
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'PUBLICA_EDITAL',
+        targetUser: 'Geral',
+        description: `Publicou o edital: "${newEdital.title}" para a unidade ${newEdital.unidade}`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for edital create:', e)
+    }
+
     return NextResponse.json({ success: true, edital: newEdital })
   }
 
@@ -328,6 +342,20 @@ export async function POST(req: NextRequest) {
 
     await writeEditais(editais)
     await broadcastUpdate()
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EDICAO_EDITAL',
+        targetUser: 'Geral',
+        description: `Editou o edital: "${edital.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for edital edit:', e)
+    }
 
     return NextResponse.json({ success: true, edital })
   }
@@ -408,6 +436,20 @@ export async function POST(req: NextRequest) {
     await writeEditais(editais)
     await broadcastUpdate()
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'INSCRICAO_EDITAL',
+        targetUser: 'Geral',
+        description: `Inscreveu-se no edital: "${edital.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for edital subscription:', e)
+    }
+
     return NextResponse.json({ success: true, edital })
   }
 
@@ -431,6 +473,20 @@ export async function POST(req: NextRequest) {
 
     await writeEditais(editais)
     await broadcastUpdate()
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'CANCELAMENTO_EDITAL',
+        targetUser: 'Geral',
+        description: `Cancelou sua inscrição no edital: "${edital.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for edital unsubscribe:', e)
+    }
 
     return NextResponse.json({ success: true, edital })
   }

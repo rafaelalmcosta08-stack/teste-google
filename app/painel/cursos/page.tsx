@@ -95,6 +95,22 @@ export default function CursosPage() {
   // Current Brasília Time tracking state to keep status badges updated dynamically
   const [brasiliaTime, setBrasiliaTime] = useState<string>('')
 
+  // Unit filter preference state
+  const [unitFilter, setUnitFilter] = useState<'Todos' | 'Minha Unidade'>('Todos')
+
+  // Load preferred filter on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('pref-unit-filter-cursos')
+    if (saved === 'Minha Unidade') {
+      setUnitFilter('Minha Unidade')
+    }
+  }, [])
+
+  const handleFilterChange = (val: 'Todos' | 'Minha Unidade') => {
+    setUnitFilter(val)
+    localStorage.setItem('pref-unit-filter-cursos', val)
+  }
+
   // --- NEW STATES FOR CUSTOM SIDEBAR ---
   const [sidebarTab, setSidebarTab] = useState<'stats' | 'evaluations' | 'officers' | 'instructors'>('stats')
   const [selectedCourseForEvaluation, setSelectedCourseForEvaluation] = useState<Course | null>(null)
@@ -571,8 +587,23 @@ export default function CursosPage() {
   // Marcados: endTime is in the future
   // Feitos: endTime is in the past
   const currentT = brasiliaTime || getBrasiliaTimeStr()
-  const cursosMarcados = courses.filter(c => c.endDate >= currentT)
-  const cursosFeitos = courses.filter(c => c.endDate < currentT)
+  
+  const myUnit = profile?.unidade_operacional || profile?.unidade_administrativa || ''
+
+  const filteredCourses = courses.filter(c => {
+    if (unitFilter === 'Todos') return true
+    if (!myUnit || myUnit === 'Sem Efetividade') return true
+    const unitUpper = myUnit.toUpperCase()
+    const titleMatch = c.title.toUpperCase().includes(unitUpper)
+    const descMatch = c.description.toUpperCase().includes(unitUpper)
+    const reqMatch = c.requirements?.toUpperCase().includes(unitUpper)
+    const courseUnit = (c as any).unidade || (c as any).unit
+    const unitFieldMatch = courseUnit ? courseUnit.toUpperCase() === unitUpper : false
+    return titleMatch || descMatch || reqMatch || unitFieldMatch
+  })
+
+  const cursosMarcados = filteredCourses.filter(c => c.endDate >= currentT)
+  const cursosFeitos = filteredCourses.filter(c => c.endDate < currentT)
 
   // Calculate dynamic stats
   const totalCursosFeitos = cursosFeitos.length
@@ -952,6 +983,36 @@ export default function CursosPage() {
             </div>
           ) : (
             <>
+              {/* Filtro de Unidade */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/40 border border-border/40 p-4 rounded-xl backdrop-blur-sm">
+                <div>
+                  <span className="block text-[10px] font-mono font-bold uppercase text-primary/70 tracking-wider">Filtro de Exibição</span>
+                  <span className="text-xs text-muted-foreground mt-0.5 block">Selecione para ver cursos gerais ou específicos da sua unidade.</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-secondary/30 p-1 rounded-lg border border-border/30 self-start sm:self-center">
+                  <button
+                    onClick={() => handleFilterChange('Todos')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      unitFilter === 'Todos'
+                        ? 'bg-foreground text-background shadow-md'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Todos os Cursos
+                  </button>
+                  <button
+                    onClick={() => handleFilterChange('Minha Unidade')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      unitFilter === 'Minha Unidade'
+                        ? 'bg-foreground text-background shadow-md'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Minha Unidade ({myUnit && myUnit !== 'Sem Efetividade' ? myUnit : 'Nenhuma'})
+                  </button>
+                </div>
+              </div>
+
               {/* SECTION 1: Cursos Marcados */}
               <div className="space-y-6">
                 <div className="flex items-center gap-2.5 border-b border-border/60 pb-3">

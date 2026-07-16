@@ -229,6 +229,20 @@ export async function POST(req: NextRequest) {
     await writeCourses(courses)
     await broadcastUpdate()
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'PUBLICA_CURSO',
+        targetUser: 'Geral',
+        description: `Publicou o curso: "${newCourse.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for course create:', e)
+    }
+
     return NextResponse.json({ success: true, course: newCourse })
   }
 
@@ -283,6 +297,20 @@ export async function POST(req: NextRequest) {
 
     await writeCourses(courses)
     await broadcastUpdate()
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EDICAO_CURSO',
+        targetUser: 'Geral',
+        description: `Editou o curso: "${course.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for course edit:', e)
+    }
 
     return NextResponse.json({ success: true, course })
   }
@@ -379,6 +407,20 @@ export async function POST(req: NextRequest) {
     await writeCourses(courses)
     await broadcastUpdate()
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'INSCRICAO_CURSO',
+        targetUser: 'Geral',
+        description: `Inscreveu-se no curso: "${course.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for course subscription:', e)
+    }
+
     return NextResponse.json({ success: true, course })
   }
 
@@ -413,6 +455,20 @@ export async function POST(req: NextRequest) {
 
     await writeCourses(courses)
     await broadcastUpdate()
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'CANCELAMENTO_CURSO',
+        targetUser: 'Geral',
+        description: `Cancelou sua inscrição no curso: "${course.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for course unsubscribe:', e)
+    }
 
     return NextResponse.json({ success: true, course })
   }

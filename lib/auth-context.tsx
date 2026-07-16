@@ -167,11 +167,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setProfile(p)
+
+    // Grava log de login
+    fetch('/api/audit-logs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${data.session?.access_token || ''}`
+      },
+      body: JSON.stringify({
+        action: 'LOGIN',
+        targetUser: p.qra || p.username || 'Sistema',
+        description: `O oficial realizou login no sistema.`
+      })
+    }).catch(() => {})
+
     return { error: null }
   }
 
   async function logout() {
     if (!supabase) return
+
+    // Grava log de logout antes de deslogar
+    if (session && profile) {
+      await fetch('/api/audit-logs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          action: 'LOGOUT',
+          targetUser: profile.qra || profile.username || 'Sistema',
+          description: `O oficial realizou logout do sistema.`
+        })
+      }).catch(() => {})
+    }
+
     await supabase.auth.signOut()
     setProfile(null)
   }

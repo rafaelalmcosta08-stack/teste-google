@@ -103,6 +103,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao inserir no banco de dados.' }, { status: 500 })
     }
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'CADASTRO_FARDAMENTO',
+        targetUser: 'Geral',
+        description: `Cadastrou o fardamento: "${newFardamento.name}" (${newFardamento.code})`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for fardamento create:', e)
+    }
+
     return NextResponse.json({ success: true, fardamento: newFardamento })
   }
 
@@ -126,6 +140,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao atualizar fardamento.' }, { status: 500 })
     }
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EDICAO_FARDAMENTO',
+        targetUser: 'Geral',
+        description: `Editou o fardamento: "${updated.name}" (${updated.code})`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for fardamento edit:', e)
+    }
+
     return NextResponse.json({ success: true })
   }
 
@@ -138,6 +166,20 @@ export async function POST(req: NextRequest) {
     const { error } = await admin.from('fardamentos').delete().eq('id', id)
     if (error) {
       return NextResponse.json({ error: 'Erro ao excluir fardamento.' }, { status: 500 })
+    }
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EXCLUSAO_FARDAMENTO',
+        targetUser: 'Geral',
+        description: `Excluiu o fardamento com ID: ${id}`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for fardamento delete:', e)
     }
 
     return NextResponse.json({ success: true })

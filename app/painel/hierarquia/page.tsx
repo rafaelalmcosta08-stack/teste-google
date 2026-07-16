@@ -144,6 +144,17 @@ export default function HierarquiaPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [savingId, setSavingId] = useState<string | null>(null)
   
+  // URL query search support
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const q = params.get('search')
+      if (q) {
+        setSearchTerm(q)
+      }
+    }
+  }, [])
+  
   // Controle de rolagem para baixo
   const [showScrollIndicator, setShowScrollIndicator] = useState(true)
   const listRef = useRef<HTMLDivElement>(null)

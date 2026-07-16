@@ -293,6 +293,46 @@ export async function PATCH(req: NextRequest) {
         description: status === 'aprovado' ? 'Aprovou o acesso do usuário ao painel' : `Alterou o acesso do usuário para status: ${status}`
       })
     }
+
+    if (unidade_administrativa !== undefined && unidade_administrativa !== metaAtual.unidade_administrativa) {
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: updaterQra,
+        action: 'ALTERACAO_UNIDADE',
+        targetUser: targetQra,
+        description: `Alterou a unidade administrativa de ${metaAtual.unidade_administrativa || 'Sem Efetividade'} para ${unidade_administrativa}`
+      })
+    }
+
+    if (unidade_operacional !== undefined && unidade_operacional !== metaAtual.unidade_operacional) {
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: updaterQra,
+        action: 'ALTERACAO_UNIDADE',
+        targetUser: targetQra,
+        description: `Alterou a unidade operacional de ${metaAtual.unidade_operacional || 'Sem Efetividade'} para ${unidade_operacional}`
+      })
+    }
+
+    if (status_atividade !== undefined && status_atividade !== metaAtual.status_atividade) {
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: updaterQra,
+        action: 'ALTERACAO_STATUS_ATIVIDADE',
+        targetUser: targetQra,
+        description: `Alterou o status de atividade de ${metaAtual.status_atividade || 'Ativo'} para ${status_atividade}`
+      })
+    }
+
+    if (advertencia !== undefined && JSON.stringify(advertencia) !== JSON.stringify(metaAtual.advertencia ?? [])) {
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: updaterQra,
+        action: 'APLICACAO_ADVERTENCIA',
+        targetUser: targetQra,
+        description: `Alterou as advertências de [${(metaAtual.advertencia ?? []).join(', ')}] para [${advertencia.join(', ')}]`
+      })
+    }
   } catch (err) {
     console.error('Erro ao gravar log de auditoria:', err)
   }

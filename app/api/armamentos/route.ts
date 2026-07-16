@@ -106,6 +106,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao inserir no banco de dados.' }, { status: 500 })
     }
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'CADASTRO_ARMAMENTO',
+        targetUser: 'Geral',
+        description: `Cadastrou o armamento: "${newArmamento.name}" (${newArmamento.code})`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for armamento create:', e)
+    }
+
     return NextResponse.json({ success: true, armamento: newArmamento })
   }
 
@@ -132,6 +146,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao atualizar armamento.' }, { status: 500 })
     }
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EDICAO_ARMAMENTO',
+        targetUser: 'Geral',
+        description: `Editou o armamento: "${updated.name}" (${updated.code})`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for armamento edit:', e)
+    }
+
     return NextResponse.json({ success: true })
   }
 
@@ -144,6 +172,20 @@ export async function POST(req: NextRequest) {
     const { error } = await admin.from('armamentos').delete().eq('id', id)
     if (error) {
       return NextResponse.json({ error: 'Erro ao excluir armamento.' }, { status: 500 })
+    }
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EXCLUSAO_ARMAMENTO',
+        targetUser: 'Geral',
+        description: `Excluiu o armamento com ID: ${id}`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for armamento delete:', e)
     }
 
     return NextResponse.json({ success: true })

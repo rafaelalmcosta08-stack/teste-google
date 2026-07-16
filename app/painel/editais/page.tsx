@@ -84,6 +84,22 @@ export default function EditaisPage() {
   // Current Brasília Time tracking state
   const [brasiliaTime, setBrasiliaTime] = useState<string>('')
 
+  // Unit filter preference state
+  const [unitFilter, setUnitFilter] = useState<'Todos' | 'Minha Unidade'>('Todos')
+
+  // Load preferred filter on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('pref-unit-filter-editais')
+    if (saved === 'Minha Unidade') {
+      setUnitFilter('Minha Unidade')
+    }
+  }, [])
+
+  const handleFilterChange = (val: 'Todos' | 'Minha Unidade') => {
+    setUnitFilter(val)
+    localStorage.setItem('pref-unit-filter-editais', val)
+  }
+
   // Confirmation notice popup on subscription
   const [subscriptionNotice, setSubscriptionNotice] = useState<string | null>(null)
 
@@ -521,8 +537,18 @@ export default function EditaisPage() {
 
   // Split editais into Aberto and Fechado (Encerrado / Histórico)
   const currentT = brasiliaTime || getBrasiliaTimeStr()
-  const editaisAbertos = editais.filter(e => e.endDate >= currentT)
-  const editaisEncerrados = editais.filter(e => e.endDate < currentT)
+  
+  const myUnit = profile?.unidade_operacional || profile?.unidade_administrativa || ''
+
+  const filteredEditais = editais.filter(e => {
+    if (unitFilter === 'Todos') return true
+    if (!myUnit || myUnit === 'Sem Efetividade') return true
+    // Show General (Geral) and the officer's specific operational or administrative unit.
+    return e.unidade === 'Geral' || e.unidade === myUnit
+  })
+
+  const editaisAbertos = filteredEditais.filter(e => e.endDate >= currentT)
+  const editaisEncerrados = filteredEditais.filter(e => e.endDate < currentT)
 
   // Quick evaluation panel trigger
   const triggerEvaluationForEdital = (edital: Edital) => {
@@ -648,6 +674,36 @@ export default function EditaisPage() {
           ) : (
             <div className="space-y-12">
               
+              {/* Filtro de Unidade */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card/40 border border-border/40 p-4 rounded-xl backdrop-blur-sm">
+                <div>
+                  <span className="block text-[10px] font-mono font-bold uppercase text-primary/70 tracking-wider">Filtro de Exibição</span>
+                  <span className="text-xs text-muted-foreground mt-0.5 block">Selecione para ver editais gerais ou específicos da sua unidade.</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-secondary/30 p-1 rounded-lg border border-border/30 self-start sm:self-center">
+                  <button
+                    onClick={() => handleFilterChange('Todos')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      unitFilter === 'Todos'
+                        ? 'bg-foreground text-background shadow-md'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Todos os Editais
+                  </button>
+                  <button
+                    onClick={() => handleFilterChange('Minha Unidade')}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      unitFilter === 'Minha Unidade'
+                        ? 'bg-foreground text-background shadow-md'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Minha Unidade ({myUnit && myUnit !== 'Sem Efetividade' ? myUnit : 'Nenhuma'})
+                  </button>
+                </div>
+              </div>
+
               {/* SECTION: EDITAIS ABERTOS */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-border/40 pb-2">

@@ -106,6 +106,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao registrar prisão.' }, { status: 500 })
     }
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'REGISTRO_PRISAO',
+        targetUser: newPrisao.preso_nome,
+        description: `Registrou a prisão de ${newPrisao.preso_nome} (RG: ${newPrisao.preso_rg}) por motivo: ${newPrisao.motivo}`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for prison create:', e)
+    }
+
     return NextResponse.json({ success: true, prisao: newPrisao })
   }
 
@@ -141,6 +155,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erro ao atualizar registro de prisão.' }, { status: 500 })
     }
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EDICAO_PRISAO',
+        targetUser: updated.preso_nome || 'Preso',
+        description: `Editou o registro de prisão de ${updated.preso_nome || original.preso_nome}`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for prison edit:', e)
+    }
+
     return NextResponse.json({ success: true })
   }
 
@@ -166,6 +194,20 @@ export async function POST(req: NextRequest) {
     const { error } = await admin.from('prisoes').delete().eq('id', id)
     if (error) {
       return NextResponse.json({ error: 'Erro ao excluir registro de prisão.' }, { status: 500 })
+    }
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EXCLUSAO_PRISAO',
+        targetUser: original.preso_nome,
+        description: `Excluiu o registro de prisão de ${original.preso_nome} (RG: ${original.preso_rg})`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for prison delete:', e)
     }
 
     return NextResponse.json({ success: true })

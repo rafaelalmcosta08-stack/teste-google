@@ -376,7 +376,58 @@ export default function PainelPage() {
           <span className="text-xs text-muted-foreground">Sincronizando sistemas...</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="space-y-8">
+          {/* Widget de Status Pessoal */}
+          {profile && (
+            <div className="rounded-xl border border-border/60 bg-card/45 p-5 backdrop-blur-sm shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-primary/20 text-primary text-xl font-bold">
+                  {profile.username ? profile.username[0].toUpperCase() : 'U'}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    {profile.qra ? profile.qra : profile.username}
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-mono font-bold ${
+                      profile.status_atividade === 'Inativo'
+                        ? 'bg-red-500/15 border border-red-500/25 text-red-400'
+                        : 'bg-emerald-500/15 border border-emerald-500/25 text-emerald-400'
+                    }`}>
+                      {profile.status_atividade ?? 'Ativo'}
+                    </span>
+                  </h3>
+                  
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <div>
+                      Patente: <strong className="text-foreground">{profile.patente ?? 'Recruta'}</strong>
+                    </div>
+                    <div className="h-1.5 w-1.5 rounded-full bg-border" />
+                    <div>
+                      Unidades: <strong className="text-foreground">Adm: {profile.unidade_administrativa || 'Sem Efetividade'} / Op: {profile.unidade_operacional || 'Sem Efetividade'}</strong>
+                    </div>
+                    {profile.cargo && profile.cargo.length > 0 && profile.cargo[0] !== 'Sem Efetividade' && (
+                      <>
+                        <div className="h-1.5 w-1.5 rounded-full bg-border" />
+                        <div>
+                          Cargos: <strong className="text-foreground">{profile.cargo.join(', ')}</strong>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => router.push(`/painel/hierarquia?search=${encodeURIComponent(profile.qra || profile.username)}`)}
+                variant="outline"
+                className="h-9 px-4 text-xs font-bold border-border/60 hover:bg-secondary/60 flex items-center gap-1.5 rounded-xl self-start md:self-auto shrink-0"
+              >
+                Ver Hierarquia Completa
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Avisos Gerais (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
@@ -654,6 +705,7 @@ export default function PainelPage() {
             )}
           </div>
 
+        </div>
         </div>
       )}
     </main>

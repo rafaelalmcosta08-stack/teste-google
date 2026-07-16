@@ -173,6 +173,20 @@ export async function POST(req: NextRequest) {
     await writeAvisos(avisos)
     await broadcastUpdate()
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'PUBLICA_AVISO',
+        targetUser: 'Geral',
+        description: `Publicou um novo aviso: "${newAviso.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for notice create:', e)
+    }
+
     return NextResponse.json({ success: true, aviso: newAviso })
   }
 
@@ -199,6 +213,20 @@ export async function POST(req: NextRequest) {
 
     await writeAvisos(avisos)
     await broadcastUpdate()
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EDICAO_AVISO',
+        targetUser: 'Geral',
+        description: `Editou o aviso: "${aviso.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for notice edit:', e)
+    }
 
     return NextResponse.json({ success: true, aviso })
   }
