@@ -82,7 +82,7 @@ export function SiteHeader() {
                   {profile.username}
                 </span>
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider leading-none">
-                  {profile.role === 'admin' ? 'Administrador' : 'Membro'}
+                  {profile.patente ?? 'Recruta'}
                 </span>
               </div>
             </div>

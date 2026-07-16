@@ -60,36 +60,6 @@ export function PainelSidebar() {
       ]
     },
     {
-      title: 'BOPE',
-      items: [
-        { label: 'Chat BOPE', href: '/painel/chat/bope', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'BOPE' }
-      ]
-    },
-    {
-      title: 'CORE',
-      items: [
-        { label: 'Chat CORE', href: '/painel/chat/core', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'CORE' }
-      ]
-    },
-    {
-      title: 'GAEP',
-      items: [
-        { label: 'Chat GAEP', href: '/painel/chat/gaep', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'GAEP' }
-      ]
-    },
-    {
-      title: 'GTM',
-      items: [
-        { label: 'Chat GTM', href: '/painel/chat/gtm', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'GTM' }
-      ]
-    },
-    {
-      title: 'GAR',
-      items: [
-        { label: 'Chat GAR', href: '/painel/chat/gar', icon: MessageSquare, visible: isAltoComando || unidade.toUpperCase() === 'GAR' }
-      ]
-    },
-    {
       title: 'Alto Comando',
       items: [
         { label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone, visible: isAltoComando },
@@ -196,9 +166,9 @@ export function PainelSidebar() {
       </div>
 
       {/* Bottom: User Info & Logout */}
-      <div className="flex flex-col gap-2 px-3 shrink-0 pt-3 border-t border-border/10">
+      <div className="flex flex-col gap-2 px-3 shrink-0 pt-5 mt-4 border-t border-border/10 pb-2">
         {profile && (
-          <div className="flex items-center gap-3 px-1 mb-2 overflow-hidden">
+          <div className="flex items-center gap-3 px-1 mb-2.5 overflow-hidden">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-foreground border border-border/40">
               {profile.username ? profile.username[0].toUpperCase() : 'U'}
             </div>
@@ -209,7 +179,7 @@ export function PainelSidebar() {
             >
               <span className="text-xs font-semibold text-foreground truncate">{profile.username}</span>
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                {profile.role === 'admin' ? 'Administrador' : 'Membro'}
+                {profile.patente ?? 'Recruta'}
               </span>
             </div>
           </div>
