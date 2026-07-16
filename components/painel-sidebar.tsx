@@ -15,6 +15,7 @@ import {
   Shield,
   LogOut,
   Megaphone,
+  Home,
 } from 'lucide-react'
 
 const menuItems = [
@@ -50,7 +51,7 @@ export function PainelSidebar() {
 
   async function handleLogout() {
     await logout()
-    router.push('/')
+    router.push('/login')
   }
 
   return (
@@ -139,7 +140,7 @@ export function PainelSidebar() {
         <button
           onClick={handleLogout}
           className="group/btn flex h-11 w-full items-center rounded-lg px-3 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
-          title="Sair"
+          title="Sair da Conta"
         >
           <LogOut className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/btn:translate-x-0.5 text-muted-foreground group-hover/btn:text-red-400" />
           <span
@@ -149,9 +150,26 @@ export function PainelSidebar() {
                 : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
             }`}
           >
-            Sair do Sistema
+            Sair da Conta
           </span>
         </button>
+
+        <Link
+          href="/login"
+          className="group/btn flex h-11 w-full items-center rounded-lg px-3 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
+          title="Voltar ao Menu Principal"
+        >
+          <Home className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/btn:-translate-x-0.5 text-muted-foreground group-hover/btn:text-primary" />
+          <span
+            className={`ml-4 text-sm transition-all duration-300 whitespace-nowrap ${
+              isHovered
+                ? 'opacity-100 translate-x-0'
+                : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
+            }`}
+          >
+            Voltar ao Menu Principal
+          </span>
+        </Link>
       </div>
     </aside>
   )
