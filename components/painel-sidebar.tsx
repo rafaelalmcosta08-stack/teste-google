@@ -60,6 +60,13 @@ export function PainelSidebar() {
       ]
     },
     {
+      title: 'Comunicação',
+      items: [
+        { label: 'Chat APM', href: '/painel/chat/apm', icon: MessageSquare, visible: hasApmAccess },
+        { label: 'Chat Alto Comando', href: '/painel/chat/alto-comando', icon: MessageSquare, visible: isAltoComando },
+      ]
+    },
+    {
       title: 'Alto Comando',
       items: [
         { label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone, visible: isAltoComando },
@@ -119,7 +126,7 @@ export function PainelSidebar() {
         </Link>
 
         {/* Scrollable Navigation Area */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 space-y-4 scrollbar-thin scrollbar-thumb-white/5 select-none pr-1.5">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 space-y-4 scrollbar-thin scrollbar-thumb-white/5 select-none pr-1.5 pb-8">
           {visibleCategories.map((cat, catIdx) => (
             <div key={cat.title} className="flex flex-col gap-1">
               {isHovered ? (
@@ -166,7 +173,7 @@ export function PainelSidebar() {
       </div>
 
       {/* Bottom: User Info & Logout */}
-      <div className="flex flex-col gap-2 px-3 shrink-0 pt-5 mt-4 border-t border-border/10 pb-2">
+      <div className="flex flex-col gap-2 px-3 shrink-0 pt-6 mt-6 border-t border-border/10 pb-3">
         {profile && (
           <div className="flex items-center gap-3 px-1 mb-2.5 overflow-hidden">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-foreground border border-border/40">
