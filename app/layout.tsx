@@ -34,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable}`} style={{ backgroundColor: "#07090e" }}>
-      <body className="font-sans antialiased" style={{ backgroundColor: "#07090e" }}>
+    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="font-sans antialiased">
         <AuthProvider>
           <SiteBackground />
           <PageTransition>{children}</PageTransition>
