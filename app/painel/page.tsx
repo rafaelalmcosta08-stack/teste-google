@@ -136,7 +136,32 @@ export default function PainelPage() {
 
       if (resAvisos.ok) {
         const data = await resAvisos.json()
-        setAvisos(data.avisos || [])
+        const rawAvisos = data.avisos || []
+        setAvisos(rawAvisos)
+
+        // Automatically mark all loaded unread announcements as read
+        if (user && session?.access_token) {
+          const unread = rawAvisos.filter((av: any) => !av.readBy?.includes(user.id))
+          if (unread.length > 0) {
+            Promise.all(
+              unread.map((av: any) =>
+                fetch('/api/avisos', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session.access_token}`,
+                  },
+                  body: JSON.stringify({
+                    action: 'mark-read',
+                    id: av.id,
+                  }),
+                }).catch(() => null)
+              )
+            ).then(() => {
+              window.dispatchEvent(new CustomEvent('notifications-update'))
+            })
+          }
+        }
       }
 
       if (resCursos.ok) {

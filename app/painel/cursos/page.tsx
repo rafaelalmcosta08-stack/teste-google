@@ -206,6 +206,38 @@ export default function CursosPage() {
       if (!res.ok) throw new Error('Falha ao buscar cursos')
       const data = await res.json()
       setCourses(data.courses || [])
+
+      // Automatically mark active courses as read in localStorage
+      try {
+        const readCourses: string[] = JSON.parse(localStorage.getItem('read_courses_ids') || '[]')
+        let changed = false
+        const nowStr = new Intl.DateTimeFormat('sv-SE', {
+          timeZone: 'America/Sao_Paulo',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }).format(new Date()).replace(' ', 'T')
+
+        const activeCourseIds = (data.courses || [])
+          .filter((c: any) => c.endDate >= nowStr)
+          .map((c: any) => c.id)
+
+        for (const id of activeCourseIds) {
+          if (!readCourses.includes(id)) {
+            readCourses.push(id)
+            changed = true
+          }
+        }
+        if (changed) {
+          localStorage.setItem('read_courses_ids', JSON.stringify(readCourses))
+          window.dispatchEvent(new CustomEvent('notifications-update'))
+        }
+      } catch (errLocal) {
+        console.error('Error auto-marking courses as read:', errLocal)
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {

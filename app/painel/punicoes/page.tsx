@@ -21,8 +21,19 @@ import {
   ChevronDown,
   X,
   RefreshCw,
-  Trash2
+  Trash2,
+  Calendar
 } from 'lucide-react'
+
+const ADVERTENCIAS_OPTIONS = [
+  'Advertência Verbal',
+  '1º Advertência',
+  '2º Advertência',
+  '3º Advertência',
+  'Advertência Ação 1/3',
+  'Advertência Ação 2/3',
+  'Advertência Ação 3/3',
+]
 
 interface Punicao {
   id: string
@@ -30,6 +41,7 @@ interface Punicao {
   oficialQra: string
   oficialUsername: string
   motivo: string
+  tipoAdvertencia?: string
   creatorId: string
   creatorQra: string
   status: 'ativa' | 'mantida' | 'removida'
@@ -70,6 +82,7 @@ export default function PunicoesPage() {
   const [selectedOficial, setSelectedOficial] = useState<Usuario | null>(null)
   const [isOficialFocused, setIsOficialFocused] = useState(false)
   const [motivo, setMotivo] = useState('')
+  const [tipoAdvertencia, setTipoAdvertencia] = useState('1º Advertência')
   const [publishing, setPublishing] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [formSuccess, setFormSuccess] = useState<string | null>(null)
@@ -179,6 +192,10 @@ export default function PunicoesPage() {
       setFormError('Selecione o oficial que receberá a advertência.')
       return
     }
+    if (!tipoAdvertencia) {
+      setFormError('Selecione o tipo de advertência.')
+      return
+    }
     if (!motivo.trim()) {
       setFormError('Especifique o motivo da punição administrativa.')
       return
@@ -197,7 +214,8 @@ export default function PunicoesPage() {
         },
         body: JSON.stringify({
           oficialId: selectedOficial.id,
-          motivo
+          motivo,
+          tipoAdvertencia
         })
       })
 
@@ -209,6 +227,7 @@ export default function PunicoesPage() {
         setSelectedOficial(null)
         setOficialSearch('')
         setMotivo('')
+        setTipoAdvertencia('1º Advertência')
         setIsFormOpen(false)
         fetchPunicoes()
       }
@@ -387,7 +406,7 @@ export default function PunicoesPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Autocomplete Oficial */}
                 <div className="relative space-y-2">
                   <label className="block text-sm font-medium text-gray-300">Oficial Punido</label>
@@ -434,6 +453,20 @@ export default function PunicoesPage() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Tipo de Advertência */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">Tipo de Advertência</label>
+                  <select
+                    value={tipoAdvertencia}
+                    onChange={(e) => setTipoAdvertencia(e.target.value)}
+                    className="bg-gray-950 border border-gray-800 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 text-white rounded-lg w-full h-11 px-3 text-sm outline-none transition"
+                  >
+                    {ADVERTENCIAS_OPTIONS.map((adv) => (
+                      <option key={adv} value={adv} className="bg-gray-950 text-white">{adv}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Motivo */}
@@ -509,7 +542,7 @@ export default function PunicoesPage() {
                       <div className="flex items-center gap-2">
                         <span className="bg-rose-950/40 border border-rose-500/30 text-rose-400 px-3 py-1 text-xs font-extrabold rounded-lg uppercase flex items-center gap-1.5">
                           <AlertTriangle className="h-3.5 w-3.5" />
-                          Sob Advertência
+                          {p.tipoAdvertencia || 'Sob Advertência'}
                         </span>
                         <span className="text-[10px] text-gray-500 font-mono">RECORRIDA: {p.recorrida ? 'SIM' : 'NÃO'}</span>
                       </div>

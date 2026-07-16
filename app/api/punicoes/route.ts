@@ -19,6 +19,7 @@ export interface Punicao {
   oficialQra: string
   oficialUsername: string
   motivo: string
+  tipoAdvertencia: string
   creatorId: string
   creatorQra: string
   status: 'ativa' | 'mantida' | 'removida'
@@ -36,19 +37,34 @@ async function readPunicoes(): Promise<Punicao[]> {
         .select('*')
         .order('created_at', { ascending: false })
       if (!error && data) {
-        return data.map((row: any) => ({
-          id: row.id,
-          oficialId: row.oficial_id,
-          oficialQra: row.oficial_qra,
-          oficialUsername: row.oficial_username,
-          motivo: row.motivo,
-          creatorId: row.creator_id,
-          creatorQra: row.creator_qra,
-          status: row.status,
-          recorrida: row.recorrida,
-          recursoStatus: row.recurso_status || undefined,
-          createdAt: row.created_at || new Date().toISOString()
-        }))
+        return data.map((row: any) => {
+          let motivoText = row.motivo || ''
+          let tipoAdv = row.tipo_advertencia || '1º Advertência'
+          
+          // Fallback parsing from [Tipo] Motivo if column is missing or null
+          if (!row.tipo_advertencia && motivoText.startsWith('[')) {
+            const endIdx = motivoText.indexOf(']')
+            if (endIdx > 0) {
+              tipoAdv = motivoText.substring(1, endIdx)
+              motivoText = motivoText.substring(endIdx + 1).trim()
+            }
+          }
+
+          return {
+            id: row.id,
+            oficialId: row.oficial_id,
+            oficialQra: row.oficial_qra,
+            oficialUsername: row.oficial_username,
+            motivo: motivoText,
+            tipoAdvertencia: tipoAdv,
+            creatorId: row.creator_id,
+            creatorQra: row.creator_qra,
+            status: row.status,
+            recorrida: row.recorrida,
+            recursoStatus: row.recurso_status || undefined,
+            createdAt: row.created_at || new Date().toISOString()
+          }
+        })
       }
     } catch (_) {}
   }
@@ -68,12 +84,14 @@ async function saveNewPunicao(punicao: Punicao) {
   const admin = getAdminClient()
   if (admin) {
     try {
-      await admin.from('punicoes_administrativas').insert({
+      // First try to insert with tipo_advertencia
+      const { error } = await admin.from('punicoes_administrativas').insert({
         id: punicao.id,
         oficial_id: punicao.oficialId,
         oficial_qra: punicao.oficialQra,
         oficial_username: punicao.oficialUsername,
         motivo: punicao.motivo,
+        tipo_advertencia: punicao.tipoAdvertencia,
         creator_id: punicao.creatorId,
         creator_qra: punicao.creatorQra,
         status: punicao.status,
@@ -81,11 +99,30 @@ async function saveNewPunicao(punicao: Punicao) {
         recurso_status: punicao.recursoStatus || null,
         created_at: punicao.createdAt
       })
+
+      // If column is missing in older DBs, retry by encoding tipoAdvertencia inside the motivo column
+      if (error && (error.message?.includes('column') || error.code === '42703')) {
+        await admin.from('punicoes_administrativas').insert({
+          id: punicao.id,
+          oficial_id: punicao.oficialId,
+          oficial_qra: punicao.oficialQra,
+          oficial_username: punicao.oficialUsername,
+          motivo: `[${punicao.tipoAdvertencia}] ${punicao.motivo}`,
+          creator_id: punicao.creatorId,
+          creator_qra: punicao.creatorQra,
+          status: punicao.status,
+          recorrida: punicao.recorrida,
+          recurso_status: punicao.recursoStatus || null,
+          created_at: punicao.createdAt
+        })
+      }
     } catch (_) {}
   }
   const list = await readPunicoes()
-  list.unshift(punicao)
-  await writePunicoesList(list)
+  // Ensure we don't end up with local file duplicate of the new punicao
+  const filteredList = list.filter(p => p.id !== punicao.id)
+  filteredList.unshift(punicao)
+  await writePunicoesList(filteredList)
 }
 
 async function updatePunicaoInDB(punicao: Punicao) {
@@ -201,7 +238,9 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { oficialId, motivo } = body
+  const { oficialId, motivo, tipoAdvertencia } = body
+
+  const selectedTipo = tipoAdvertencia || '1º Advertência'
 
   if (!oficialId || !motivo) {
     return NextResponse.json({ error: 'Oficial e Motivo são obrigatórios.' }, { status: 400 })
@@ -214,15 +253,38 @@ export async function POST(req: NextRequest) {
   }
 
   const targetMeta = userData.user.user_metadata ?? {}
-  const targetCargos = targetMeta.cargo || []
-  
-  // Assign "Sob Advertência" to target user cargo if they don't have it already
-  if (!targetCargos.includes('Sob Advertência')) {
-    const newCargos = [...targetCargos, 'Sob Advertência']
-    await admin.auth.admin.updateUserById(oficialId, {
-      user_metadata: { ...targetMeta, cargo: newCargos }
-    })
+  const targetCargosRaw = targetMeta.cargo || []
+  const targetCargos = Array.isArray(targetCargosRaw)
+    ? targetCargosRaw
+    : typeof targetCargosRaw === 'string'
+      ? [targetCargosRaw]
+      : []
+
+  const targetAdvertenciasRaw = targetMeta.advertencia || []
+  const targetAdvertencias = Array.isArray(targetAdvertenciasRaw)
+    ? targetAdvertenciasRaw
+    : typeof targetAdvertenciasRaw === 'string'
+      ? [targetAdvertenciasRaw]
+      : []
+
+  let updatedCargos = [...targetCargos]
+  if (!updatedCargos.includes('Sob Advertência')) {
+    updatedCargos.push('Sob Advertência')
   }
+
+  let updatedAdvertencias = [...targetAdvertencias]
+  if (!updatedAdvertencias.includes(selectedTipo)) {
+    updatedAdvertencias.push(selectedTipo)
+  }
+
+  // Update target user's metadata in a single step
+  await admin.auth.admin.updateUserById(oficialId, {
+    user_metadata: {
+      ...targetMeta,
+      cargo: updatedCargos,
+      advertencia: updatedAdvertencias
+    }
+  })
 
   const newPunicao: Punicao = {
     id: 'pun_' + Math.random().toString(36).substring(2, 11),
@@ -230,6 +292,7 @@ export async function POST(req: NextRequest) {
     oficialQra: targetMeta.qra || targetMeta.username || 'Oficial',
     oficialUsername: targetMeta.username || '',
     motivo,
+    tipoAdvertencia: selectedTipo,
     creatorId: requester.id,
     creatorQra: requesterMeta.qra || requesterMeta.username || 'Diretor Corregedoria',
     status: 'ativa',
@@ -364,15 +427,22 @@ export async function PATCH(req: NextRequest) {
       punicao.status = 'removida'
       punicao.recursoStatus = 'removido'
 
-      // Remove "Sob Advertência" from target official metadata
+      // Remove "Sob Advertência" and the specific warning type from target official metadata
       const { data: targetUserData } = await admin.auth.admin.getUserById(punicao.oficialId)
       if (targetUserData?.user) {
         const targetMeta = targetUserData.user.user_metadata ?? {}
         const targetCargos = targetMeta.cargo || []
         const updatedCargos = targetCargos.filter((c: string) => c !== 'Sob Advertência')
 
+        const targetAdvertencias = targetMeta.advertencia || []
+        const updatedAdvertencias = targetAdvertencias.filter((a: string) => a !== punicao.tipoAdvertencia)
+
         await admin.auth.admin.updateUserById(punicao.oficialId, {
-          user_metadata: { ...targetMeta, cargo: updatedCargos }
+          user_metadata: { 
+            ...targetMeta, 
+            cargo: updatedCargos,
+            advertencia: updatedAdvertencias
+          }
         })
       }
 

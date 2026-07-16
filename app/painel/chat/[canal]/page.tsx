@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
 import { useAuth } from '@/lib/auth-context'
+import { useNotifications } from '@/lib/notification-context'
 import {
   Send,
   Users,
@@ -48,6 +49,7 @@ export default function ChatCanalPage({
   const { canal } = React.use(params)
   const router = useRouter()
   const { user, profile, session } = useAuth()
+  const { markAsRead } = useNotifications()
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState('')
@@ -170,6 +172,13 @@ export default function ChatCanalPage({
       loadMessages()
     }
   }, [canal, session, profile])
+
+  // Mark chat as read when opening or receiving new messages
+  useEffect(() => {
+    if (session?.access_token && (canal === 'apm' || canal === 'alto-comando')) {
+      markAsRead('chat', canal)
+    }
+  }, [canal, messages.length, session, markAsRead])
 
   // Real-time SSE listener
   useEffect(() => {

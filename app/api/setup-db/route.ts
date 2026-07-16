@@ -270,6 +270,7 @@ CREATE TABLE IF NOT EXISTS public.punicoes_administrativas (
   oficial_qra TEXT NOT NULL,
   oficial_username TEXT NOT NULL,
   motivo TEXT NOT NULL,
+  tipo_advertencia TEXT,
   creator_id UUID NOT NULL,
   creator_qra TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'ativa',
@@ -277,6 +278,7 @@ CREATE TABLE IF NOT EXISTS public.punicoes_administrativas (
   recurso_status TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE public.punicoes_administrativas ADD COLUMN IF NOT EXISTS tipo_advertencia TEXT;
 ALTER TABLE public.punicoes_administrativas ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON public.punicoes_administrativas TO service_role;
 GRANT ALL ON public.punicoes_administrativas TO authenticated;

@@ -223,6 +223,38 @@ export default function EditaisPage() {
       if (!res.ok) throw new Error('Falha ao buscar editais')
       const data = await res.json()
       setEditais(data.editais || [])
+
+      // Automatically mark active editais as read in localStorage
+      try {
+        const readEditais: string[] = JSON.parse(localStorage.getItem('read_editais_ids') || '[]')
+        let changed = false
+        const nowStr = new Intl.DateTimeFormat('sv-SE', {
+          timeZone: 'America/Sao_Paulo',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        }).format(new Date()).replace(' ', 'T')
+
+        const activeEditalIds = (data.editais || [])
+          .filter((e: any) => e.endDate >= nowStr)
+          .map((e: any) => e.id)
+
+        for (const id of activeEditalIds) {
+          if (!readEditais.includes(id)) {
+            readEditais.push(id)
+            changed = true
+          }
+        }
+        if (changed) {
+          localStorage.setItem('read_editais_ids', JSON.stringify(readEditais))
+          window.dispatchEvent(new CustomEvent('notifications-update'))
+        }
+      } catch (errLocal) {
+        console.error('Error auto-marking editais as read:', errLocal)
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {
