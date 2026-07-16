@@ -51,7 +51,7 @@ export function PainelSidebar() {
 
   async function handleLogout() {
     await logout()
-    router.push('/login')
+    router.push('/')
   }
 
   return (
@@ -155,7 +155,7 @@ export function PainelSidebar() {
         </button>
 
         <Link
-          href="/login"
+          href="/"
           className="group/btn flex h-11 w-full items-center rounded-lg px-3 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
           title="Voltar ao Menu Principal"
         >

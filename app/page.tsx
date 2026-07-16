@@ -1,10 +1,14 @@
+'use client'
+
 import Link from 'next/link'
 import { Sparkles, ChevronDown } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { SiteBackground } from '@/components/site-background'
 import { UnitsSection } from '@/components/units-section'
+import { useAuth } from '@/lib/auth-context'
 
 export default function HomePage() {
+  const { user } = useAuth()
   return (
     <>
       <SiteBackground />
@@ -34,14 +38,25 @@ export default function HomePage() {
               <Sparkles className="h-4 w-4" />
               Manual de Estudo TAFF
             </Link>
-            <Link
-              href="/recrutador"
-              className="liquid-glass-btn rounded-lg"
-            >
-              <div className="liquid-glass-inner rounded-lg px-5 py-2.5 text-sm font-semibold text-white">
-                Cadastro Policial
-              </div>
-            </Link>
+            {user ? (
+              <Link
+                href="/painel"
+                className="liquid-glass-btn rounded-lg"
+              >
+                <div className="liquid-glass-inner rounded-lg px-5 py-2.5 text-sm font-semibold text-white">
+                  Ir para o Painel
+                </div>
+              </Link>
+            ) : (
+              <Link
+                href="/recrutador"
+                className="liquid-glass-btn rounded-lg"
+              >
+                <div className="liquid-glass-inner rounded-lg px-5 py-2.5 text-sm font-semibold text-white">
+                  Cadastro Policial
+                </div>
+              </Link>
+            )}
           </div>
 
           <Link

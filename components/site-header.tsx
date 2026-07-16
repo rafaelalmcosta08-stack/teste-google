@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { UserPlus, LogIn } from 'lucide-react'
 import { motion } from 'motion/react'
+import { useAuth } from '@/lib/auth-context'
 
 export function SiteHeader() {
+  const { user } = useAuth()
   const [hoveredNav, setHoveredNav] = useState<string | null>(null)
   const [hoveredAction, setHoveredAction] = useState<string | null>(null)
   const pathname = usePathname()
@@ -62,24 +64,26 @@ export function SiteHeader() {
           className="flex items-center gap-4 sm:gap-6"
           onMouseLeave={() => setHoveredAction(null)}
         >
-          <Link
-            href="/recrutador"
-            className="relative flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-white"
-            onMouseEnter={() => setHoveredAction('recrutador')}
-          >
-            {hoveredAction === 'recrutador' && (
-              <motion.div
-                layoutId="action-hover-pill"
-                className="absolute inset-0 -z-10 rounded-md bg-white/5 border border-white/5 shadow-inner"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              />
-            )}
-            <UserPlus className="h-4 w-4" />
-            <span className="hidden sm:inline">Cadastro Policial</span>
-          </Link>
+          {!user && (
+            <Link
+              href="/recrutador"
+              className="relative flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:text-white"
+              onMouseEnter={() => setHoveredAction('recrutador')}
+            >
+              {hoveredAction === 'recrutador' && (
+                <motion.div
+                  layoutId="action-hover-pill"
+                  className="absolute inset-0 -z-10 rounded-md bg-white/5 border border-white/5 shadow-inner"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+              )}
+              <UserPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">Cadastro Policial</span>
+            </Link>
+          )}
 
           <Link
             href="/login"
