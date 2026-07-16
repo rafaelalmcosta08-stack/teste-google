@@ -365,6 +365,20 @@ export async function POST(req: NextRequest) {
     await writeEditais(editais)
     await broadcastUpdate()
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EXCLUSAO_EDITAL',
+        targetUser: 'Geral',
+        description: `Excluiu o edital: "${edital.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for edital delete:', e)
+    }
+
     return NextResponse.json({ success: true })
   }
 
@@ -465,6 +479,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Usuário não inscrito neste edital.' }, { status: 400 })
     }
 
+    const sub = edital.subscribers.find(s => s.userId === userId)
+    const targetName = sub ? sub.qra : 'Oficial'
+
     edital.evaluations[userId] = {
       status,
       nota: grade,
@@ -474,6 +491,20 @@ export async function POST(req: NextRequest) {
 
     await writeEditais(editais)
     await broadcastUpdate()
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'AVALIACAO_EDITAL',
+        targetUser: targetName,
+        description: `Lançou avaliação no edital "${edital.title}": Nota ${grade}, Status: ${status}`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for edital evaluation:', e)
+    }
 
     return NextResponse.json({ success: true, edital })
   }

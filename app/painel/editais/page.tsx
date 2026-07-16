@@ -669,12 +669,22 @@ export default function EditaisPage() {
                       const isExpanded = expandedIds.has(edital.id)
                       const availableSpotsCount = edital.subscribers.length
 
+                      // Calculate visual urgency (expiring in less than 24 hours)
+                      const endDateMs = new Date(edital.endDate).getTime()
+                      const currentMs = new Date(currentT).getTime()
+                      const hoursLeft = (endDateMs - currentMs) / 3600000
+                      const isUrgent = hoursLeft > 0 && hoursLeft <= 24
+
                       return (
                         <div
                           key={edital.id}
                           id={`edital-card-${edital.id}`}
-                          className={`rounded-xl border bg-card/40 p-5 space-y-4 backdrop-blur-sm transition-all hover:border-border/100 hover:shadow-md relative ${
-                            isSubscribed ? 'border-emerald-500/30 ring-1 ring-emerald-500/10' : 'border-border/60'
+                          className={`rounded-xl border p-5 space-y-4 backdrop-blur-sm transition-all hover:border-border/100 hover:shadow-md relative ${
+                            isSubscribed
+                              ? 'border-emerald-500/30 ring-1 ring-emerald-500/10 bg-emerald-500/[0.01]'
+                              : isUrgent
+                              ? 'border-amber-500/50 bg-amber-500/[0.03] shadow-[0_0_15px_-3px_rgba(245,158,11,0.15)] hover:border-amber-500/70'
+                              : 'border-border/60 bg-card/40'
                           }`}
                         >
                           {/* Card Header */}
@@ -687,6 +697,11 @@ export default function EditaisPage() {
                                 <span className="rounded bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 tracking-wider uppercase flex items-center gap-1">
                                   <Clock className="h-2.5 w-2.5" /> Aberto
                                 </span>
+                                {isUrgent && (
+                                  <span className="rounded bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 text-[9px] font-bold text-amber-400 tracking-wider uppercase flex items-center gap-1 animate-pulse">
+                                    <AlertTriangle className="h-2.5 w-2.5" /> Expira em {Math.ceil(hoursLeft)}h!
+                                  </span>
+                                )}
                               </div>
                               <h3 className="text-base font-bold text-foreground pr-10 mt-1 leading-snug">
                                 {edital.title}

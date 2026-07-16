@@ -200,6 +200,20 @@ ALTER TABLE public.prisoes ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON public.prisoes TO service_role;
 GRANT ALL ON public.prisoes TO authenticated;
 GRANT ALL ON public.prisoes TO anon;
+
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id TEXT PRIMARY KEY,
+  who_id UUID NOT NULL,
+  who_qra TEXT NOT NULL,
+  action TEXT NOT NULL,
+  target_user TEXT NOT NULL,
+  description TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.audit_logs TO service_role;
+GRANT ALL ON public.audit_logs TO authenticated;
+GRANT ALL ON public.audit_logs TO anon;
 `
 
 export async function GET(req: NextRequest) {

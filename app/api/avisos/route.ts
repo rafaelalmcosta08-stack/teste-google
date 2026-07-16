@@ -221,6 +221,20 @@ export async function POST(req: NextRequest) {
     await writeAvisos(avisos)
     await broadcastUpdate()
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EXCLUSAO_AVISO',
+        targetUser: 'Geral',
+        description: `Excluiu o aviso: "${aviso.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for notice delete:', e)
+    }
+
     return NextResponse.json({ success: true })
   }
 

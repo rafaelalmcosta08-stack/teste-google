@@ -319,6 +319,20 @@ export async function POST(req: NextRequest) {
     await writeCourses(courses)
     await broadcastUpdate()
 
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'EXCLUSAO_CURSO',
+        targetUser: 'Geral',
+        description: `Excluiu o curso: "${course.title}"`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for course delete:', e)
+    }
+
     return NextResponse.json({ success: true })
   }
 
@@ -438,6 +452,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Usuário não inscrito neste curso.' }, { status: 400 })
     }
 
+    const sub = course.subscribers.find(s => s.userId === userId)
+    const targetName = sub ? sub.qra : 'Oficial'
+
     course.evaluations[userId] = {
       status,
       nota: grade,
@@ -447,6 +464,20 @@ export async function POST(req: NextRequest) {
 
     await writeCourses(courses)
     await broadcastUpdate()
+
+    // Log de auditoria
+    try {
+      const { writeAuditLog } = await import('@/lib/audit')
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+        action: 'AVALIACAO_CURSO',
+        targetUser: targetName,
+        description: `Lançou avaliação no curso "${course.title}": Nota ${grade}, Status: ${status}`
+      })
+    } catch (e) {
+      console.error('Failed to write audit log for course evaluation:', e)
+    }
 
     return NextResponse.json({ success: true, course })
   }

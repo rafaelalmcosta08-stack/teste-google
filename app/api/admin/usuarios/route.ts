@@ -258,6 +258,45 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
 
+  // Grava logs de auditoria
+  try {
+    const { writeAuditLog } = await import('@/lib/audit')
+    const targetQra = metaAtual.qra || metaAtual.username || 'Desconhecido'
+    const updaterQra = requesterMeta.qra || requesterMeta.username || 'Oficial'
+
+    if (patente !== undefined && patente !== metaAtual.patente) {
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: updaterQra,
+        action: 'ALTERACAO_PATENTE',
+        targetUser: targetQra,
+        description: `Alterou a patente de ${metaAtual.patente || 'Sem patente'} para ${patente}`
+      })
+    }
+
+    if (cargo !== undefined && JSON.stringify(cargo) !== JSON.stringify(metaAtual.cargo)) {
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: updaterQra,
+        action: 'ALTERACAO_CARGO',
+        targetUser: targetQra,
+        description: `Alterou os cargos de [${(metaAtual.cargo ?? []).join(', ')}] para [${cargo.join(', ')}]`
+      })
+    }
+
+    if (status !== undefined && status !== metaAtual.status) {
+      await writeAuditLog({
+        whoId: requester.id,
+        whoQra: updaterQra,
+        action: status === 'aprovado' ? 'APROVACAO_ACESSO' : 'REVOGACAO_ACESSO',
+        targetUser: targetQra,
+        description: status === 'aprovado' ? 'Aprovou o acesso do usuário ao painel' : `Alterou o acesso do usuário para status: ${status}`
+      })
+    }
+  } catch (err) {
+    console.error('Erro ao gravar log de auditoria:', err)
+  }
+
   // Atualiza na tabela profiles se existir (best-effort)
   if (status !== undefined) {
     await admin.from('profiles').update({ status }).eq('id', id).then(() => {}).catch(() => {})

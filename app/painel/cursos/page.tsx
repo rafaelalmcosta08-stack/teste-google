@@ -977,6 +977,12 @@ export default function CursosPage() {
                       const status = getCourseStatus(course)
                       const userHasRead = user && course.readBy.includes(user.id)
 
+                      // Calculate visual urgency (expiring in less than 24 hours)
+                      const endDateMs = new Date(course.endDate).getTime()
+                      const currentMs = new Date(currentT).getTime()
+                      const hoursLeft = (endDateMs - currentMs) / 3600000
+                      const isUrgent = hoursLeft > 0 && hoursLeft <= 24
+
                       return (
                         <motion.div
                           layout
@@ -985,6 +991,8 @@ export default function CursosPage() {
                           className={`group rounded-xl border p-6 transition-all duration-300 backdrop-blur-sm shadow-sm ${
                             isSubscribed
                               ? 'border-emerald-500/30 bg-emerald-500/[0.02]'
+                              : isUrgent
+                              ? 'border-amber-500/50 bg-amber-500/[0.03] shadow-[0_0_15px_-3px_rgba(245,158,11,0.15)] hover:border-amber-500/70'
                               : 'border-border/60 bg-card/60 hover:bg-card/80'
                           }`}
                         >
@@ -1007,6 +1015,14 @@ export default function CursosPage() {
                                 <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${status.color}`}>
                                   {status.text}
                                 </span>
+
+                                {/* Urgent Highlight */}
+                                {isUrgent && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/25 border border-amber-500/50 px-2.5 py-0.5 text-xs font-bold text-amber-400 animate-pulse">
+                                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+                                    Inscrição fecha em {Math.ceil(hoursLeft)}h!
+                                  </span>
+                                )}
 
                                 {/* Subscribed Badge */}
                                 {isSubscribed && (
