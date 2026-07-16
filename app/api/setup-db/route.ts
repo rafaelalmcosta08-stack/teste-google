@@ -214,6 +214,22 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON public.audit_logs TO service_role;
 GRANT ALL ON public.audit_logs TO authenticated;
 GRANT ALL ON public.audit_logs TO anon;
+
+CREATE TABLE IF NOT EXISTS public.registro_unidades (
+  id TEXT PRIMARY KEY,
+  oficial_id UUID NOT NULL,
+  oficial_qra TEXT NOT NULL,
+  oficial_username TEXT NOT NULL,
+  unidade TEXT NOT NULL,
+  requerente_id UUID NOT NULL,
+  requerente_qra TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'aceito', 'recusado')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.registro_unidades ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.registro_unidades TO service_role;
+GRANT ALL ON public.registro_unidades TO authenticated;
+GRANT ALL ON public.registro_unidades TO anon;
 `
 
 export async function GET(req: NextRequest) {

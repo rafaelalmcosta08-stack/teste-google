@@ -51,6 +51,11 @@ export function PainelSidebar() {
     ['Instrutor Treinamento Operacional', 'Instrutor De Cursos e Recrutamentos', 'Supervisor APM', 'Diretor APM', 'Alto Comando'].includes(c)
   )
 
+  const isRequester = cargos.some((c) =>
+    ['Comando Bope', 'Comando Core', 'Comando GAR', 'Comando GAEP', 'Comando GTM', 'Diretor APM', 'Diretor Corregedoria'].includes(c)
+  )
+  const hasRegistroUnidadesAccess = isAltoComando || isRequester
+
   const unidade = profile?.unidade_operacional || ''
 
   const categories = [
@@ -85,6 +90,7 @@ export function PainelSidebar() {
       title: 'Alto Comando',
       items: [
         { label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone, visible: isAltoComando },
+        { label: 'Registro de Unidade', href: '/painel/registro-unidade', icon: Shield, visible: hasRegistroUnidadesAccess },
       ]
     },
     {

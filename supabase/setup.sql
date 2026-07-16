@@ -175,3 +175,20 @@ grant all on public.prisoes to service_role;
 grant all on public.prisoes to authenticated;
 grant all on public.prisoes to anon;
 
+create table if not exists public.registro_unidades (
+  id text primary key,
+  oficial_id uuid not null,
+  oficial_qra text not null,
+  oficial_username text not null,
+  unidade text not null,
+  requerente_id uuid not null,
+  requerente_qra text not null,
+  status text not null default 'pendente' check (status in ('pendente', 'aceito', 'recusado')),
+  created_at timestamptz not null default now()
+);
+alter table public.registro_unidades enable row level security;
+grant all on public.registro_unidades to service_role;
+grant all on public.registro_unidades to authenticated;
+grant all on public.registro_unidades to anon;
+
+
