@@ -582,8 +582,14 @@ export default function EditaisPage() {
 
       {/* Subscription notice alert modal/notice */}
       {subscriptionNotice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl space-y-4">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+          onClick={() => setSubscriptionNotice(null)}
+        >
+          <div 
+            className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 text-emerald-400">
               <CheckCircle className="h-6 w-6 shrink-0" />
               <h3 className="text-lg font-bold text-foreground">Inscrição Registrada no Site!</h3>
