@@ -137,9 +137,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function login(username: string, password: string): Promise<{ error: string | null }> {
     if (!supabase) return { error: 'Supabase não configurado.' }
 
-    const email = `${username.toLowerCase().trim()}@policiaaspect.internal`
+    const cleanUsername = username.toLowerCase().trim()
+    let email = `${cleanUsername}@policiaaspect.internal`
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    let { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    
+    // Se falhar, tenta com o domínio antigo para suporte a usuários legados
+    if (error) {
+      const legacyEmail = `${cleanUsername}@policialegacy.internal`
+      const fallbackResult = await supabase.auth.signInWithPassword({ email: legacyEmail, password })
+      if (!fallbackResult.error) {
+        data = fallbackResult.data
+        error = null
+      }
+    }
+
     if (error) {
       return { error: 'Usuário ou senha incorretos.' }
     }

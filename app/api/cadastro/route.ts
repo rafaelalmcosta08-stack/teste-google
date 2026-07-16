@@ -22,10 +22,11 @@ export async function POST(req: NextRequest) {
 
   const username = usuario.trim().toLowerCase()
   const email = `${username}@policiaaspect.internal`
+  const legacyEmail = `${username}@policialegacy.internal`
 
   // Verifica se username já está em uso (via listUsers)
   const { data: listData } = await admin.auth.admin.listUsers({ perPage: 1000 })
-  const jaExiste = listData?.users?.some((u) => u.email === email)
+  const jaExiste = listData?.users?.some((u) => u.email === email || u.email === legacyEmail)
   if (jaExiste) {
     return NextResponse.json({ error: 'Este usuário já está cadastrado.' }, { status: 409 })
   }
