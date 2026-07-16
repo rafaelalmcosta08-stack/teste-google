@@ -8,7 +8,7 @@ import {
   Search, 
   Plus, 
   Edit, 
-  Trash, 
+  Trash2, 
   X, 
   AlertTriangle,
   Users,
@@ -433,7 +433,7 @@ export default function ViaturaPage() {
                         onClick={() => handleDelete(item.id)}
                         className="h-9 w-9 rounded-lg flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/15"
                       >
-                        <Trash className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   )}

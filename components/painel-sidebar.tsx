@@ -54,7 +54,6 @@ export function PainelSidebar() {
       items: [
         { label: 'Cursos', href: '/painel/cursos', icon: GraduationCap, visible: true },
         { label: 'Editais', href: '/painel/editais', icon: FileText, visible: true },
-        { label: 'Manual de Conduta', href: '/painel/manual-de-conduta', icon: BookOpen, visible: true },
         { label: 'Perímetros', href: '/painel/perimetros', icon: Map, visible: true },
         { label: 'Ações', href: '/painel/acoes', icon: Activity, visible: true },
       ]
