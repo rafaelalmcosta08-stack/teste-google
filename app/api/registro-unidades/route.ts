@@ -120,7 +120,9 @@ export async function POST(req: NextRequest) {
     .limit(1)
 
   if (checkError) {
-    return NextResponse.json({ error: 'Erro ao validar solicitação pendente.' }, { status: 500 })
+    return NextResponse.json({
+      error: `Erro ao validar solicitação pendente: ${checkError.message}. Se a tabela não existir ou faltar permissão, acesse /setup para executar a migração SQL e aplicar os GRANTs.`
+    }, { status: 500 })
   }
 
   if (existing && existing.length > 0) {

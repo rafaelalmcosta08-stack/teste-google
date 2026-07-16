@@ -3,8 +3,39 @@ import { NextRequest, NextResponse } from 'next/server'
 const GRANT_SQL = `
 GRANT ALL ON public.profiles TO service_role;
 GRANT ALL ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO anon;
+
+GRANT ALL ON public.prisoes TO service_role;
+GRANT ALL ON public.prisoes TO authenticated;
+GRANT ALL ON public.prisoes TO anon;
+
+GRANT ALL ON public.audit_logs TO service_role;
+GRANT ALL ON public.audit_logs TO authenticated;
+GRANT ALL ON public.audit_logs TO anon;
+
+GRANT ALL ON public.registro_unidades TO service_role;
+GRANT ALL ON public.registro_unidades TO authenticated;
+GRANT ALL ON public.registro_unidades TO anon;
+
+GRANT ALL ON public.promocoes TO service_role;
+GRANT ALL ON public.promocoes TO authenticated;
+GRANT ALL ON public.promocoes TO anon;
+
+GRANT ALL ON public.ocorrencias TO service_role;
+GRANT ALL ON public.ocorrencias TO authenticated;
+GRANT ALL ON public.ocorrencias TO anon;
+
+GRANT ALL ON public.punicoes_administrativas TO service_role;
+GRANT ALL ON public.punicoes_administrativas TO authenticated;
+GRANT ALL ON public.punicoes_administrativas TO anon;
+
+GRANT ALL ON public.civis_status TO service_role;
+GRANT ALL ON public.civis_status TO authenticated;
+GRANT ALL ON public.civis_status TO anon;
+
 GRANT USAGE ON SCHEMA public TO service_role;
 GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA public TO anon;
 `
 
 export async function GET(req: NextRequest) {

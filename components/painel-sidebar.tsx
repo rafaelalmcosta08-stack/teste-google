@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { useNotifications } from '@/lib/notification-context'
 import { useSidebar } from '@/lib/sidebar-context'
+import { motion, AnimatePresence } from 'motion/react'
 import {
   Shirt,
   Crosshair,
@@ -22,6 +23,10 @@ import {
   Lock,
   Activity,
   Shield,
+  Search,
+  Scale,
+  TrendingUp,
+  ChevronDown,
 } from 'lucide-react'
 
 export function PainelSidebar() {
@@ -33,6 +38,33 @@ export function PainelSidebar() {
   const sidebar = useSidebar()
 
   const isExpanded = isHovered || sidebar.isOpen
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [showArrow, setShowArrow] = useState(false)
+
+  const checkScroll = () => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const hasOverflow = el.scrollHeight > el.clientHeight
+    const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 4 // 4px margin of error
+    setShowArrow(hasOverflow && !isAtBottom)
+  }
+
+  useEffect(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+
+    checkScroll()
+
+    const observer = new ResizeObserver(() => {
+      checkScroll()
+    })
+    observer.observe(el)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [isExpanded])
 
   const getBadgeCount = (href: string): number => {
     if (href === '/painel') return counts.avisos
@@ -67,7 +99,6 @@ export function PainelSidebar() {
         { label: 'Fardamento', href: '/painel/fardamento', icon: Shirt, visible: true },
         { label: 'Armamento', href: '/painel/armamento', icon: Crosshair, visible: true },
         { label: 'Viatura', href: '/painel/viatura', icon: Car, visible: true },
-        { label: 'Prisão', href: '/painel/prisao', icon: Lock, visible: true },
       ]
     },
     {
@@ -75,8 +106,24 @@ export function PainelSidebar() {
       items: [
         { label: 'Cursos', href: '/painel/cursos', icon: GraduationCap, visible: true },
         { label: 'Editais', href: '/painel/editais', icon: FileText, visible: true },
+        { label: 'Promoções', href: '/painel/promocoes', icon: TrendingUp, visible: true },
         { label: 'Perímetros', href: '/painel/perimetros', icon: Map, visible: true },
         { label: 'Ações', href: '/painel/acoes', icon: Activity, visible: true },
+      ]
+    },
+    {
+      title: 'Sistema Policial',
+      items: [
+        { label: 'Ocorrências (B.O.)', href: '/painel/ocorrencias', icon: FileText, visible: true },
+        { label: 'Banco de Dados Civil', href: '/painel/banco-civil', icon: Search, visible: true },
+        { label: 'Prisão', href: '/painel/prisao', icon: Lock, visible: true },
+        { label: 'Registro de Unidade', href: '/painel/registro-unidade', icon: Shield, visible: hasRegistroUnidadesAccess },
+      ]
+    },
+    {
+      title: 'Corregedoria',
+      items: [
+        { label: 'Punição Administrativa', href: '/painel/punicoes', icon: Scale, visible: true },
       ]
     },
     {
@@ -90,7 +137,6 @@ export function PainelSidebar() {
       title: 'Alto Comando',
       items: [
         { label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone, visible: isAltoComando },
-        { label: 'Registro de Unidade', href: '/painel/registro-unidade', icon: Shield, visible: hasRegistroUnidadesAccess },
       ]
     },
     {
@@ -160,65 +206,97 @@ export function PainelSidebar() {
             </span>
           </Link>
   
-          {/* Scrollable Navigation Area */}
-          <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 space-y-4 scrollbar-thin scrollbar-thumb-white/5 select-none pr-1.5 pb-8">
-            {visibleCategories.map((cat, catIdx) => (
-              <div key={cat.title} className="flex flex-col gap-1">
-                {isExpanded ? (
-                  <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-primary/70 select-none">
-                    {cat.title}
-                  </div>
-                ) : (
-                  catIdx > 0 && <hr className="border-t border-white/5 my-1" />
-                )}
-                
-                <div className="flex flex-col gap-1">
-                  {cat.items.map((item) => {
-                    const isActive = pathname === item.href
-                    const Icon = item.icon
-                    const badgeCount = getBadgeCount(item.href)
-  
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={sidebar.close}
-                        className={`group/item flex h-10 items-center rounded-lg px-3 transition-all duration-200 shrink-0 ${
-                          isActive
-                            ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/10'
-                            : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-                        }`}
-                        title={item.label}
-                      >
-                        <div className="relative shrink-0 flex items-center justify-center">
-                          <Icon className={`h-4.5 w-4.5 transition-transform duration-200 group-hover/item:scale-105 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover/item:text-foreground'}`} />
-                          {!isExpanded && badgeCount > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          {/* Scrollable Navigation Area Wrapper */}
+          <div className="relative flex-1 min-h-0 overflow-hidden">
+            <div
+              ref={scrollContainerRef}
+              onScroll={checkScroll}
+              className="h-full overflow-y-auto overflow-x-hidden px-3 space-y-4 scrollbar-thin scrollbar-thumb-white/5 select-none pr-1.5 pb-8"
+            >
+              {visibleCategories.map((cat, catIdx) => (
+                <div key={cat.title} className="flex flex-col gap-1">
+                  {isExpanded ? (
+                    <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-primary/70 select-none">
+                      {cat.title}
+                    </div>
+                  ) : (
+                    catIdx > 0 && <hr className="border-t border-white/5 my-1" />
+                  )}
+                  
+                  <div className="flex flex-col gap-1">
+                    {cat.items.map((item) => {
+                      const isActive = pathname === item.href
+                      const Icon = item.icon
+                      const badgeCount = getBadgeCount(item.href)
+    
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={sidebar.close}
+                          className={`group/item flex h-10 items-center rounded-lg px-3 transition-all duration-200 shrink-0 ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/10'
+                              : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+                          }`}
+                          title={item.label}
+                        >
+                          <div className="relative shrink-0 flex items-center justify-center">
+                            <Icon className={`h-4.5 w-4.5 transition-transform duration-200 group-hover/item:scale-105 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover/item:text-foreground'}`} />
+                            {!isExpanded && badgeCount > 0 && (
+                              <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`ml-3.5 text-xs transition-all duration-300 whitespace-nowrap ${
+                              isExpanded
+                                ? 'opacity-100 translate-x-0'
+                                : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                          {isExpanded && badgeCount > 0 && (
+                            <span className="ml-auto bg-red-500/20 border border-red-500/40 text-[10px] font-mono font-bold text-red-400 px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
+                              {badgeCount}
                             </span>
                           )}
-                        </div>
-                        <span
-                          className={`ml-3.5 text-xs transition-all duration-300 whitespace-nowrap ${
-                            isExpanded
-                              ? 'opacity-100 translate-x-0'
-                              : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
-                          }`}
-                        >
-                          {item.label}
-                        </span>
-                        {isExpanded && badgeCount > 0 && (
-                          <span className="ml-auto bg-red-500/20 border border-red-500/40 text-[10px] font-mono font-bold text-red-400 px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
-                            {badgeCount}
-                          </span>
-                        )}
-                      </Link>
-                    )
-                  })}
+                        </Link>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Scroll Indicator */}
+            <AnimatePresence>
+              {showArrow && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card/95 via-card/75 to-transparent pointer-events-none flex items-end justify-center pb-2 z-20"
+                >
+                  <motion.div
+                    animate={{
+                      y: [0, 4, 0],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <ChevronDown className="h-4.5 w-4.5 text-foreground/60" />
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
   

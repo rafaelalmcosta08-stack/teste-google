@@ -230,6 +230,67 @@ ALTER TABLE public.registro_unidades ENABLE ROW LEVEL SECURITY;
 GRANT ALL ON public.registro_unidades TO service_role;
 GRANT ALL ON public.registro_unidades TO authenticated;
 GRANT ALL ON public.registro_unidades TO anon;
+
+CREATE TABLE IF NOT EXISTS public.promocoes (
+  id TEXT PRIMARY KEY,
+  oficial_id UUID NOT NULL,
+  oficial_username TEXT NOT NULL,
+  oficial_qra TEXT NOT NULL,
+  cargo_anterior TEXT NOT NULL,
+  cargo_novo TEXT NOT NULL,
+  observacao TEXT,
+  creator_id UUID NOT NULL,
+  creator_qra TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.promocoes ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.promocoes TO service_role;
+GRANT ALL ON public.promocoes TO authenticated;
+GRANT ALL ON public.promocoes TO anon;
+
+CREATE TABLE IF NOT EXISTS public.ocorrencias (
+  id TEXT PRIMARY KEY,
+  oficial_id UUID NOT NULL,
+  oficial_qra TEXT NOT NULL,
+  oficial_username TEXT NOT NULL,
+  tipo TEXT NOT NULL,
+  envolvidos TEXT NOT NULL,
+  descricao TEXT NOT NULL,
+  data_hora TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.ocorrencias ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.ocorrencias TO service_role;
+GRANT ALL ON public.ocorrencias TO authenticated;
+GRANT ALL ON public.ocorrencias TO anon;
+
+CREATE TABLE IF NOT EXISTS public.punicoes_administrativas (
+  id TEXT PRIMARY KEY,
+  oficial_id UUID NOT NULL,
+  oficial_qra TEXT NOT NULL,
+  oficial_username TEXT NOT NULL,
+  motivo TEXT NOT NULL,
+  creator_id UUID NOT NULL,
+  creator_qra TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'ativa',
+  recorrida BOOLEAN NOT NULL DEFAULT FALSE,
+  recurso_status TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.punicoes_administrativas ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.punicoes_administrativas TO service_role;
+GRANT ALL ON public.punicoes_administrativas TO authenticated;
+GRANT ALL ON public.punicoes_administrativas TO anon;
+
+CREATE TABLE IF NOT EXISTS public.civis_status (
+  nome TEXT PRIMARY KEY,
+  status TEXT NOT NULL DEFAULT 'limpo',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public.civis_status ENABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.civis_status TO service_role;
+GRANT ALL ON public.civis_status TO authenticated;
+GRANT ALL ON public.civis_status TO anon;
 `
 
 export async function GET(req: NextRequest) {

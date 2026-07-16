@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { promises as fs } from 'fs'
+import { promises as fs, readFileSync } from 'fs'
 import path from 'path'
 import { createClient } from '@supabase/supabase-js'
 
@@ -137,7 +137,21 @@ export function hasCanalAccess(profile: any, canal: string): boolean {
 
   const cargos: string[] = profile.cargo || []
   const isAltoComando = cargos.includes('Alto Comando')
+  const isDiretorCorregedoria = cargos.includes('Diretor Corregedoria')
   const unidade: string = profile.unidade_operacional || ''
+
+  if (canal.startsWith('recurso_')) {
+    if (isAltoComando || isDiretorCorregedoria) return true
+    const punicaoId = canal.substring(8)
+    try {
+      const filePath = path.join(process.cwd(), 'punicoes-data.json')
+      const fileContent = readFileSync(filePath, 'utf8')
+      const punicoes = JSON.parse(fileContent)
+      const found = punicoes.find((p: any) => p.id === punicaoId)
+      if (found && found.oficialId === profile.id) return true
+    } catch (_) {}
+    return false
+  }
 
   switch (canal) {
     case 'geral':
