@@ -16,18 +16,11 @@ import {
   LogOut,
   Megaphone,
   Home,
+  MessageSquare,
+  Car,
+  Lock,
+  Activity,
 } from 'lucide-react'
-
-const menuItems = [
-  { label: 'Fardamento', href: '/painel/fardamento', icon: Shirt },
-  { label: 'Armamento', href: '/painel/armamento', icon: Crosshair },
-  { label: 'Hierarquia', href: '/painel/hierarquia', icon: Award },
-  { label: 'Cursos', href: '/painel/cursos', icon: GraduationCap },
-  { label: 'Editais', href: '/painel/editais', icon: FileText },
-  { label: 'Perímetros', href: '/painel/perimetros', icon: Map },
-  { label: 'Manual de Conduta', href: '/painel/manual-de-conduta', icon: BookOpen },
-  { label: 'Administração', href: '/painel/administracao', icon: Shield },
-]
 
 export function PainelSidebar() {
   const [isHovered, setIsHovered] = useState(false)
@@ -38,16 +31,87 @@ export function PainelSidebar() {
   const isAdmin = profile?.role === 'admin'
   const isAltoComando = profile?.cargo?.includes('Alto Comando') || isAdmin
 
-  const activeMenuItems = menuItems.filter((item) => {
-    if (item.href === '/painel/administracao') {
-      return isAdmin
-    }
-    return true
-  })
+  const cargos = profile?.cargo || []
+  const hasApmAccess = isAdmin || cargos.some((c) =>
+    ['Instrutor Treinamento Operacional', 'Instrutor De Cursos e Recrutamentos', 'Supervisor APM', 'Diretor APM', 'Alto Comando'].includes(c)
+  )
 
-  if (isAltoComando) {
-    activeMenuItems.push({ label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone })
-  }
+  const unidade = profile?.unidade_operacional || ''
+
+  const categories = [
+    {
+      title: 'Informação Policial',
+      items: [
+        { label: 'Chat Geral', href: '/painel/chat/geral', icon: MessageSquare, visible: true },
+        { label: 'Hierarquia', href: '/painel/hierarquia', icon: Award, visible: true },
+        { label: 'Fardamento', href: '/painel/fardamento', icon: Shirt, visible: true },
+        { label: 'Armamento', href: '/painel/armamento', icon: Crosshair, visible: true },
+        { label: 'Viatura', href: '/painel/viatura', icon: Car, visible: true },
+        { label: 'Prisão', href: '/painel/prisao', icon: Lock, visible: true },
+      ]
+    },
+    {
+      title: 'Formação Policial',
+      items: [
+        { label: 'Chat APM', href: '/painel/chat/apm', icon: MessageSquare, visible: hasApmAccess },
+        { label: 'Cursos', href: '/painel/cursos', icon: GraduationCap, visible: true },
+        { label: 'Editais', href: '/painel/editais', icon: FileText, visible: true },
+        { label: 'Manual de Conduta', href: '/painel/manual-de-conduta', icon: BookOpen, visible: true },
+        { label: 'Perímetros', href: '/painel/perimetros', icon: Map, visible: true },
+        { label: 'Ações', href: '/painel/acoes', icon: Activity, visible: true },
+      ]
+    },
+    {
+      title: 'BOPE',
+      items: [
+        { label: 'Chat BOPE', href: '/painel/chat/bope', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'BOPE' }
+      ]
+    },
+    {
+      title: 'CORE',
+      items: [
+        { label: 'Chat CORE', href: '/painel/chat/core', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'CORE' }
+      ]
+    },
+    {
+      title: 'GAEP',
+      items: [
+        { label: 'Chat GAEP', href: '/painel/chat/gaep', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'GAEP' }
+      ]
+    },
+    {
+      title: 'GTM',
+      items: [
+        { label: 'Chat GTM', href: '/painel/chat/gtm', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'GTM' }
+      ]
+    },
+    {
+      title: 'GAR',
+      items: [
+        { label: 'Chat GAR', href: '/painel/chat/gar', icon: MessageSquare, visible: isAdmin || unidade.toUpperCase() === 'GAR' }
+      ]
+    },
+    {
+      title: 'Alto Comando',
+      items: [
+        { label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone, visible: isAltoComando },
+        { label: 'Chat Alto Comando', href: '/painel/chat/alto-comando', icon: MessageSquare, visible: isAltoComando },
+      ]
+    },
+    {
+      title: 'Administração do Site',
+      items: [
+        { label: 'Administração', href: '/painel/administracao', icon: Shield, visible: isAdmin }
+      ]
+    }
+  ]
+
+  const visibleCategories = categories
+    .map((cat) => ({
+      ...cat,
+      items: cat.items.filter((item) => item.visible)
+    }))
+    .filter((cat) => cat.items.length > 0)
 
   async function handleLogout() {
     await logout()
@@ -64,10 +128,10 @@ export function PainelSidebar() {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Top: Logo / Badge */}
-      <div className="flex flex-col">
+      <div className="flex flex-col min-h-0 flex-1">
         <Link
           href="/painel"
-          className="flex items-center px-4 mb-8 outline-none"
+          className="flex items-center px-4 mb-6 outline-none shrink-0"
           title="Polícia Legacy"
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-inner">
@@ -82,45 +146,57 @@ export function PainelSidebar() {
           </span>
         </Link>
 
-        {/* Menu Items */}
-        <nav className="flex flex-col gap-1.5 px-3">
-          {activeMenuItems.map((item) => {
-            const isActive = pathname === item.href
-            const Icon = item.icon
+        {/* Scrollable Navigation Area */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 space-y-4 scrollbar-thin scrollbar-thumb-white/5 select-none pr-1.5">
+          {visibleCategories.map((cat, catIdx) => (
+            <div key={cat.title} className="flex flex-col gap-1">
+              {isHovered ? (
+                <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-primary/70 select-none">
+                  {cat.title}
+                </div>
+              ) : (
+                catIdx > 0 && <hr className="border-t border-white/5 my-1" />
+              )}
+              
+              <div className="flex flex-col gap-1">
+                {cat.items.map((item) => {
+                  const isActive = pathname === item.href
+                  const Icon = item.icon
 
-            // Se for Administração, só destaca ou permite se for admin (página real já barra)
-            // Mas vamos exibir o item normalmente como solicitado.
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`group/item flex h-11 items-center rounded-lg px-3 transition-all duration-200 ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/10'
-                    : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
-                }`}
-                title={item.label}
-              >
-                <Icon className={`h-5 w-5 shrink-0 transition-transform duration-200 group-hover/item:scale-105 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover/item:text-foreground'}`} />
-                <span
-                  className={`ml-4 text-sm transition-all duration-300 whitespace-nowrap ${
-                    isHovered
-                      ? 'opacity-100 translate-x-0'
-                      : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
-                  }`}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            )
-          })}
-        </nav>
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`group/item flex h-10 items-center rounded-lg px-3 transition-all duration-200 shrink-0 ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/10'
+                          : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+                      }`}
+                      title={item.label}
+                    >
+                      <Icon className={`h-4.5 w-4.5 shrink-0 transition-transform duration-200 group-hover/item:scale-105 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover/item:text-foreground'}`} />
+                      <span
+                        className={`ml-3.5 text-xs transition-all duration-300 whitespace-nowrap ${
+                          isHovered
+                            ? 'opacity-100 translate-x-0'
+                            : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Bottom: User Info & Logout */}
-      <div className="flex flex-col gap-2 px-3">
+      <div className="flex flex-col gap-2 px-3 shrink-0 pt-3 border-t border-border/10">
         {profile && (
-          <div className="flex items-center gap-3 border-t border-border/20 pt-4 px-1 mb-2 overflow-hidden">
+          <div className="flex items-center gap-3 px-1 mb-2 overflow-hidden">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-foreground border border-border/40">
               {profile.username ? profile.username[0].toUpperCase() : 'U'}
             </div>
@@ -139,12 +215,12 @@ export function PainelSidebar() {
 
         <button
           onClick={handleLogout}
-          className="group/btn flex h-11 w-full items-center rounded-lg px-3 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+          className="group/btn flex h-10 w-full items-center rounded-lg px-3 text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
           title="Sair da Conta"
         >
-          <LogOut className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/btn:translate-x-0.5 text-muted-foreground group-hover/btn:text-red-400" />
+          <LogOut className="h-4.5 w-4.5 shrink-0 transition-transform duration-200 group-hover/btn:translate-x-0.5 text-muted-foreground group-hover/btn:text-red-400" />
           <span
-            className={`ml-4 text-sm transition-all duration-300 whitespace-nowrap ${
+            className={`ml-3.5 text-xs transition-all duration-300 whitespace-nowrap ${
               isHovered
                 ? 'opacity-100 translate-x-0'
                 : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
@@ -156,12 +232,12 @@ export function PainelSidebar() {
 
         <Link
           href="/"
-          className="group/btn flex h-11 w-full items-center rounded-lg px-3 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
+          className="group/btn flex h-10 w-full items-center rounded-lg px-3 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200"
           title="Voltar ao Menu Principal"
         >
-          <Home className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover/btn:-translate-x-0.5 text-muted-foreground group-hover/btn:text-primary" />
+          <Home className="h-4.5 w-4.5 shrink-0 transition-transform duration-200 group-hover/btn:-translate-x-0.5 text-muted-foreground group-hover/btn:text-primary" />
           <span
-            className={`ml-4 text-sm transition-all duration-300 whitespace-nowrap ${
+            className={`ml-3.5 text-xs transition-all duration-300 whitespace-nowrap ${
               isHovered
                 ? 'opacity-100 translate-x-0'
                 : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
@@ -174,3 +250,4 @@ export function PainelSidebar() {
     </aside>
   )
 }
+

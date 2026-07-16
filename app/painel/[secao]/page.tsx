@@ -34,6 +34,18 @@ const secoes: Record<string, { titulo: string; descricao: string }> = {
     titulo: 'Administração',
     descricao: 'Área administrativa restrita para gestão interna do departamento.',
   },
+  viatura: {
+    titulo: 'Viatura',
+    descricao: 'Gestão, patrulhamento e alocação de viaturas oficiais.',
+  },
+  prisao: {
+    titulo: 'Prisão',
+    descricao: 'Registros de detenções, relatórios penais e controle de celas.',
+  },
+  acoes: {
+    titulo: 'Ações',
+    descricao: 'Planejamento e coordenação de ações táticas e operações especiais.',
+  },
 }
 
 export function generateStaticParams() {
