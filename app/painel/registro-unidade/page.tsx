@@ -80,7 +80,26 @@ export default function RegistroUnidadePage() {
   const [searchOfficial, setSearchOfficial] = useState('')
   const [selectedOfficial, setSelectedOfficial] = useState<UserProfile | null>(null)
   const [selectedUnit, setSelectedUnit] = useState('')
+  const [selectedPatent, setSelectedPatent] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
+
+  // Patentes list from system
+  const PATENTES = [
+    'Coronel',
+    'Tenente-Coronel',
+    'Major',
+    'Capitão',
+    '1º Tenente',
+    '2º Tenente',
+    'Aluno Oficial',
+    'Sub Tenente',
+    '1º Sargento',
+    '2º Sargento',
+    '3º Sargento',
+    'Cabo',
+    'Soldado',
+    'Recruta',
+  ]
 
   // Feedback State
   const [submitting, setSubmitting] = useState(false)
@@ -185,8 +204,13 @@ export default function RegistroUnidadePage() {
       return
     }
 
-    if (!selectedUnit) {
-      setFormError('Por favor, selecione a unidade de destino.')
+    if (!selectedUnit && !selectedPatent) {
+      setFormError('Por favor, selecione a unidade de destino ou a patente.')
+      return
+    }
+
+    if (selectedUnit && selectedPatent) {
+      setFormError('Selecione apenas a unidade ou a patente, não ambos.')
       return
     }
 
@@ -202,7 +226,7 @@ export default function RegistroUnidadePage() {
           oficialId: selectedOfficial.id,
           oficialQra: selectedOfficial.qra || selectedOfficial.username,
           oficialUsername: selectedOfficial.username,
-          unidade: selectedUnit
+          unidade: selectedUnit ? selectedUnit : `patente:${selectedPatent}`
         })
       })
 
@@ -213,6 +237,7 @@ export default function RegistroUnidadePage() {
         setSelectedOfficial(null)
         setSearchOfficial('')
         setSelectedUnit('')
+        setSelectedPatent('')
         fetchRequests() // Refresh list
       } else {
         setFormError(json.error ?? 'Ocorreu um erro ao enviar a solicitação.')
@@ -427,28 +452,58 @@ export default function RegistroUnidadePage() {
                   )}
                 </div>
 
-                {/* Destination Unit Dropdown Selector */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Selecionar Unidade de Destino <span className="text-red-400">*</span>
-                  </label>
-                  <select
-                    value={selectedUnit}
-                    onChange={(e) => setSelectedUnit(e.target.value)}
-                    className="w-full rounded-lg border border-border/45 bg-background text-sm text-foreground h-11 px-3 outline-none focus:border-gray-500 transition-all"
-                  >
-                    <option value="">-- Escolha uma unidade autorizada --</option>
-                    {allowedUnits.map((unit) => (
-                      <option key={unit} value={unit}>
-                        {UNIT_LABELS[unit]}
-                      </option>
-                    ))}
-                  </select>
+                {/* Selection Fields - Exclusive Choice */}
+                <div className="space-y-4">
+                  {/* Destination Unit Dropdown Selector */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      Selecionar Unidade de Destino
+                    </label>
+                    <select
+                      value={selectedUnit}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setSelectedUnit(val)
+                        if (val !== '') setSelectedPatent('')
+                      }}
+                      className="w-full rounded-lg border border-border/45 bg-background text-sm text-foreground h-11 px-3 outline-none focus:border-gray-500 transition-all"
+                    >
+                      <option value="">-- Nenhuma unidade --</option>
+                      {allowedUnits.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {UNIT_LABELS[unit]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Destination Patent Dropdown Selector */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      Selecionar Patente
+                    </label>
+                    <select
+                      value={selectedPatent}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setSelectedPatent(val)
+                        if (val !== '') setSelectedUnit('')
+                      }}
+                      className="w-full rounded-lg border border-border/45 bg-background text-sm text-foreground h-11 px-3 outline-none focus:border-gray-500 transition-all"
+                    >
+                      <option value="">-- Nenhuma patente --</option>
+                      {PATENTES.map((pat) => (
+                        <option key={pat} value={pat}>
+                          {pat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={submitting || !selectedOfficial || !selectedUnit}
+                  disabled={submitting || !selectedOfficial || (!selectedUnit && !selectedPatent) || (selectedUnit && selectedPatent)}
                   className="w-full h-11 bg-white hover:bg-gray-100 text-gray-900 font-bold text-sm transition-colors mt-4"
                 >
                   {submitting ? 'Enviando Solicitação...' : 'Fazer Solicitação'}
@@ -496,21 +551,28 @@ export default function RegistroUnidadePage() {
                 <p className="text-xs text-muted-foreground italic">Nenhuma solicitação enviada por você.</p>
               ) : (
                 <div className="space-y-2.5 max-h-48 overflow-y-auto">
-                  {requests.slice(0, 5).map((req) => (
-                    <div key={req.id} className="flex items-center justify-between p-2.5 rounded bg-secondary/20 border border-border/10 text-xs">
-                      <div>
-                        <span className="font-bold text-white">{req.oficial_qra}</span>
-                        <span className="mx-1 text-muted-foreground">→</span>
-                        <span className="text-indigo-300 font-semibold">{req.unidade}</span>
+                  {requests.slice(0, 5).map((req) => {
+                    const isReqPatente = req.unidade.startsWith('patente:')
+                    return (
+                      <div key={req.id} className="flex items-center justify-between p-2.5 rounded bg-secondary/20 border border-border/10 text-xs">
+                        <div>
+                          <span className="font-bold text-white">{req.oficial_qra}</span>
+                          <span className="mx-1 text-muted-foreground">→</span>
+                          {isReqPatente ? (
+                            <span className="text-zinc-300 font-semibold">{req.unidade.replace('patente:', '')} (Patente)</span>
+                          ) : (
+                            <span className="text-indigo-300 font-semibold">{req.unidade} (Unidade)</span>
+                          )}
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          req.status === 'pendente' ? 'text-yellow-400 bg-yellow-400/10' :
+                          req.status === 'aceito' ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'
+                        }`}>
+                          {req.status === 'pendente' ? 'Pendente' : req.status === 'aceito' ? 'Aceito' : 'Recusado'}
+                        </span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        req.status === 'pendente' ? 'text-yellow-400 bg-yellow-400/10' :
-                        req.status === 'aceito' ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'
-                      }`}>
-                        {req.status === 'pendente' ? 'Pendente' : req.status === 'aceito' ? 'Aceito' : 'Recusado'}
-                      </span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -554,7 +616,7 @@ export default function RegistroUnidadePage() {
                 <thead className="bg-secondary/40 border-b border-border/40 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-6 py-4 font-semibold">Oficial (Destinatário)</th>
-                    <th className="px-6 py-4 font-semibold text-center">Unidade de Destino</th>
+                    <th className="px-6 py-4 font-semibold text-center">Destino</th>
                     <th className="px-6 py-4 font-semibold">Requerente (Quem Solicitou)</th>
                     <th className="px-6 py-4 font-semibold">Data da Solicitação</th>
                     <th className="px-6 py-4 font-semibold text-center">Status</th>
@@ -564,6 +626,7 @@ export default function RegistroUnidadePage() {
                 <tbody className="divide-y divide-border/25">
                   {requests.map((req) => {
                     const isPending = req.status === 'pendente'
+                    const isReqPatente = req.unidade.startsWith('patente:')
                     return (
                       <tr key={req.id} className="hover:bg-secondary/15 transition-colors">
                         {/* Official Target info */}
@@ -579,11 +642,27 @@ export default function RegistroUnidadePage() {
                           </div>
                         </td>
 
-                        {/* Destination Unit Tag */}
+                        {/* Destination Tag (Unidade or Patente with Badge) */}
                         <td className="px-6 py-4 text-center">
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/15 px-3 py-1 text-xs font-bold text-indigo-400 border border-indigo-500/20">
-                            {req.unidade}
-                          </span>
+                          {isReqPatente ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="inline-flex items-center rounded bg-zinc-500/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400 border border-zinc-500/20 uppercase tracking-wider">
+                                Patente
+                              </span>
+                              <span className="text-sm font-semibold text-white">
+                                {req.unidade.replace('patente:', '')}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="inline-flex items-center rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-400 border border-indigo-500/20 uppercase tracking-wider">
+                                Unidade
+                              </span>
+                              <span className="text-sm font-semibold text-white">
+                                {req.unidade}
+                              </span>
+                            </div>
+                          )}
                         </td>
 
                         {/* Requested by Commander */}

@@ -274,11 +274,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (isAltoComando) {
         unreadRegistroUnidadesCount = pendingSolicitacoes.length
         pendingSolicitacoes.forEach((s: any) => {
+          const isPatentType = s.unidade.startsWith('patente:')
+          const targetValue = isPatentType ? s.unidade.replace('patente:', '') : s.unidade
+          const titleText = isPatentType ? 'Nova Solicitação de Patente' : 'Nova Solicitação de Unidade'
+          const descText = isPatentType 
+            ? `${s.requerente_qra} solicitou a patente ${targetValue} para ${s.oficial_qra}`
+            : `${s.requerente_qra} solicitou ${targetValue} para ${s.oficial_qra}`
+
           newNotificationsList.push({
             id: `reg-unid-${s.id}`,
             type: 'chat',
-            title: 'Nova Solicitação de Unidade',
-            description: `${s.requerente_qra} solicitou ${s.unidade} para ${s.oficial_qra}`,
+            title: titleText,
+            description: descText,
             href: '/painel/registro-unidade',
             createdAt: s.created_at || new Date().toISOString(),
           })
@@ -287,11 +294,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const myPending = pendingSolicitacoes.filter((s: any) => s.oficial_id === user.id)
         unreadRegistroUnidadesCount = myPending.length
         myPending.forEach((s: any) => {
+          const isPatentType = s.unidade.startsWith('patente:')
+          const targetValue = isPatentType ? s.unidade.replace('patente:', '') : s.unidade
+          const titleText = isPatentType ? 'Sua Patente foi Solicitada' : 'Sua Unidade foi Solicitada'
+          const descText = isPatentType
+            ? `${s.requerente_qra} solicitou sua patente como ${targetValue}`
+            : `${s.requerente_qra} solicitou seu registro na unidade ${targetValue}`
+
           newNotificationsList.push({
             id: `reg-unid-${s.id}`,
             type: 'chat',
-            title: 'Sua Unidade foi Solicitada',
-            description: `${s.requerente_qra} solicitou seu registro na unidade ${s.unidade}`,
+            title: titleText,
+            description: descText,
             href: '/painel/registro-unidade',
             createdAt: s.created_at || new Date().toISOString(),
           })

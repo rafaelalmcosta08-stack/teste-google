@@ -86,26 +86,61 @@ export async function POST(req: NextRequest) {
   const isAdmin = requesterMeta.role === 'admin'
   const isAltoComando = cargos.includes('Alto Comando') || isAdmin
 
-  // Regras de unidade e cargo do comandante solicitante
-  const UNIT_COMMANDERS: Record<string, string> = {
-    'BOPE': 'Comando Bope',
-    'CORE': 'Comando Core',
-    'GAR': 'Comando GAR',
-    'GAEP': 'Comando GAEP',
-    'GTM': 'Comando GTM',
-    'APM': 'Diretor APM',
-    'Corregedoria': 'Diretor Corregedoria'
-  }
+  const isPatente = unidade.startsWith('patente:')
 
-  const requiredCargo = UNIT_COMMANDERS[unidade]
-  if (!requiredCargo) {
-    return NextResponse.json({ error: 'Unidade de destino inválida.' }, { status: 400 })
-  }
+  if (isPatente) {
+    const patenteNome = unidade.replace('patente:', '')
+    const validPatentes = [
+      'Coronel',
+      'Tenente-Coronel',
+      'Major',
+      'Capitão',
+      '1º Tenente',
+      '2º Tenente',
+      'Aluno Oficial',
+      'Sub Tenente',
+      '1º Sargento',
+      '2º Sargento',
+      '3º Sargento',
+      'Cabo',
+      'Soldado',
+      'Recruta'
+    ]
+    if (!validPatentes.includes(patenteNome)) {
+      return NextResponse.json({ error: 'Patente inválida.' }, { status: 400 })
+    }
 
-  if (!isAltoComando && !cargos.includes(requiredCargo)) {
-    return NextResponse.json({
-      error: `Você não tem permissão para solicitar registro para a unidade ${unidade}. Requer o cargo ${requiredCargo}.`
-    }, { status: 403 })
+    const isComandante = cargos.some((c: string) =>
+      ['Comando Bope', 'Comando Core', 'Comando GAR', 'Comando GAEP', 'Comando GTM', 'Diretor APM', 'Diretor Corregedoria'].includes(c)
+    )
+
+    if (!isAltoComando && !isComandante) {
+      return NextResponse.json({
+        error: 'Você não tem permissão para solicitar alteração de patente. Apenas comandantes ou Alto Comando.'
+      }, { status: 403 })
+    }
+  } else {
+    // Regras de unidade e cargo do comandante solicitante
+    const UNIT_COMMANDERS: Record<string, string> = {
+      'BOPE': 'Comando Bope',
+      'CORE': 'Comando Core',
+      'GAR': 'Comando GAR',
+      'GAEP': 'Comando GAEP',
+      'GTM': 'Comando GTM',
+      'APM': 'Diretor APM',
+      'Corregedoria': 'Diretor Corregedoria'
+    }
+
+    const requiredCargo = UNIT_COMMANDERS[unidade]
+    if (!requiredCargo) {
+      return NextResponse.json({ error: 'Unidade de destino inválida.' }, { status: 400 })
+    }
+
+    if (!isAltoComando && !cargos.includes(requiredCargo)) {
+      return NextResponse.json({
+        error: `Você não tem permissão para solicitar registro para a unidade ${unidade}. Requer o cargo ${requiredCargo}.`
+      }, { status: 403 })
+    }
   }
 
   // Regra: um oficial só pode ter 1 solicitação pendente por vez.
@@ -154,9 +189,11 @@ export async function POST(req: NextRequest) {
     await writeAuditLog({
       whoId: requester.id,
       whoQra: requesterQra,
-      action: 'SOLICITACAO_REGISTRO_UNIDADE',
+      action: isPatente ? 'SOLICITACAO_REGISTRO_PATENTE' : 'SOLICITACAO_REGISTRO_UNIDADE',
       targetUser: oficialQra,
-      description: `Solicitou registro da unidade ${unidade} para o oficial ${oficialQra} (${oficialUsername})`
+      description: isPatente
+        ? `Solicitou registro da patente ${unidade.replace('patente:', '')} para o oficial ${oficialQra} (${oficialUsername})`
+        : `Solicitou registro da unidade ${unidade} para o oficial ${oficialQra} (${oficialUsername})`
     })
   } catch (err) {
     console.error('Erro ao escrever log de auditoria:', err)
@@ -217,6 +254,8 @@ export async function PATCH(req: NextRequest) {
 
   const requesterQra = requesterMeta.qra || requesterMeta.username || 'Alto Comando'
 
+  const isPatente = solicitacao.unidade.startsWith('patente:')
+
   if (action === 'recusar') {
     // Atualizar status para recusado
     const { error: updateError } = await admin
@@ -234,9 +273,11 @@ export async function PATCH(req: NextRequest) {
       await writeAuditLog({
         whoId: requester.id,
         whoQra: requesterQra,
-        action: 'RECUSA_REGISTRO_UNIDADE',
+        action: isPatente ? 'RECUSA_REGISTRO_PATENTE' : 'RECUSA_REGISTRO_UNIDADE',
         targetUser: solicitacao.oficial_qra,
-        description: `Recusou a solicitação de registro de unidade ${solicitacao.unidade} para ${solicitacao.oficial_qra}`
+        description: isPatente
+          ? `Recusou a solicitação de patente ${solicitacao.unidade.replace('patente:', '')} para ${solicitacao.oficial_qra}`
+          : `Recusou a solicitação de registro de unidade ${solicitacao.unidade} para ${solicitacao.oficial_qra}`
       })
     } catch (err) {
       console.error(err)
@@ -259,28 +300,43 @@ export async function PATCH(req: NextRequest) {
   let novoMeta = { ...targetMeta }
   const unidade = solicitacao.unidade
 
-  if (['BOPE', 'CORE', 'GAR', 'GAEP', 'GTM'].includes(unidade)) {
-    novoMeta.unidade_operacional = unidade
+  if (isPatente) {
+    const patenteNome = unidade.replace('patente:', '')
+    novoMeta.patente = patenteNome
+
+    // Update in profiles table in database too!
+    const { error: profileUpdateError } = await admin
+      .from('profiles')
+      .update({ patente: patenteNome })
+      .eq('id', solicitacao.oficial_id)
     
-    let tag = ''
-    if (unidade === 'BOPE') tag = 'Probatório Bope'
-    else if (unidade === 'CORE') tag = 'Probatório Core'
-    else if (unidade === 'GAR') tag = 'Membro GAR'
-    else if (unidade === 'GAEP') tag = 'Membro GAEP'
-    else if (unidade === 'GTM') tag = 'Membro GTM'
-
-    if (tag && !targetCargos.includes(tag)) {
-      novoMeta.cargo = [...targetCargos, tag]
+    if (profileUpdateError) {
+      console.error('Erro ao atualizar perfil do oficial no banco:', profileUpdateError)
     }
-  } else if (['APM', 'Corregedoria'].includes(unidade)) {
-    novoMeta.unidade_administrativa = unidade
+  } else {
+    if (['BOPE', 'CORE', 'GAR', 'GAEP', 'GTM'].includes(unidade)) {
+      novoMeta.unidade_operacional = unidade
+      
+      let tag = ''
+      if (unidade === 'BOPE') tag = 'Probatório Bope'
+      else if (unidade === 'CORE') tag = 'Probatório Core'
+      else if (unidade === 'GAR') tag = 'Membro GAR'
+      else if (unidade === 'GAEP') tag = 'Membro GAEP'
+      else if (unidade === 'GTM') tag = 'Membro GTM'
 
-    let tag = ''
-    if (unidade === 'APM') tag = 'Supervisor APM'
-    else if (unidade === 'Corregedoria') tag = 'Membro Corregedoria'
+      if (tag && !targetCargos.includes(tag)) {
+        novoMeta.cargo = [...targetCargos, tag]
+      }
+    } else if (['APM', 'Corregedoria'].includes(unidade)) {
+      novoMeta.unidade_administrativa = unidade
 
-    if (tag && !targetCargos.includes(tag)) {
-      novoMeta.cargo = [...targetCargos, tag]
+      let tag = ''
+      if (unidade === 'APM') tag = 'Supervisor APM'
+      else if (unidade === 'Corregedoria') tag = 'Membro Corregedoria'
+
+      if (tag && !targetCargos.includes(tag)) {
+        novoMeta.cargo = [...targetCargos, tag]
+      }
     }
   }
 
@@ -309,9 +365,11 @@ export async function PATCH(req: NextRequest) {
     await writeAuditLog({
       whoId: requester.id,
       whoQra: requesterQra,
-      action: 'APROVACAO_REGISTRO_UNIDADE',
+      action: isPatente ? 'APROVACAO_REGISTRO_PATENTE' : 'APROVACAO_REGISTRO_UNIDADE',
       targetUser: solicitacao.oficial_qra,
-      description: `Aprovou registro da unidade ${solicitacao.unidade} para o oficial ${solicitacao.oficial_qra}, atualizando seus cargos/tags automaticamente.`
+      description: isPatente
+        ? `Aprovou a patente ${unidade.replace('patente:', '')} para o oficial ${solicitacao.oficial_qra} no sistema de hierarquia.`
+        : `Aprovou registro da unidade ${solicitacao.unidade} para o oficial ${solicitacao.oficial_qra}, atualizando seus cargos/tags automaticamente.`
     })
   } catch (err) {
     console.error(err)
