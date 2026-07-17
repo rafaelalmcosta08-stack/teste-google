@@ -113,17 +113,8 @@ export default function RegistroUnidadePage() {
 
   // Check which units the user can request
   const getAllowedUnits = useCallback(() => {
-    if (isAltoComando) {
-      return Object.keys(UNIT_LABELS)
-    }
-    const allowed: string[] = []
-    Object.entries(UNIT_COMMANDERS).forEach(([unit, cargo]) => {
-      if (cargos.includes(cargo)) {
-        allowed.push(unit)
-      }
-    })
-    return allowed
-  }, [isAltoComando, cargos])
+    return Object.keys(UNIT_LABELS)
+  }, [])
 
   const allowedUnits = getAllowedUnits()
 
@@ -286,10 +277,10 @@ export default function RegistroUnidadePage() {
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary/80 border border-border/40">
               <Shield className="h-5.5 w-5.5 text-foreground" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Registro de Unidade</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Registro de Oficial</h1>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Solicite a transferência/registro de oficiais para unidades oficiais e gerencie aprovações de atribuição.
+            Solicite a alteração de unidade ou patente de oficiais e gerencie aprovações de atribuição.
           </p>
         </div>
 

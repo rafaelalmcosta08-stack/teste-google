@@ -118,22 +118,14 @@ export function PainelSidebar() {
       title: 'Sistema Policial',
       items: [
         { label: 'Ocorrências (B.O.)', href: '/painel/ocorrencias', icon: FileText, visible: true },
-        { label: 'Banco de Dados Civil', href: '/painel/banco-civil', icon: Search, visible: true },
         { label: 'Prisão', href: '/painel/prisao', icon: Lock, visible: true },
-        { label: 'Registro de Unidade', href: '/painel/registro-unidade', icon: Shield, visible: hasRegistroUnidadesAccess },
+        { label: 'Registro de Oficial', href: '/painel/registro-unidade', icon: Shield, visible: true },
       ]
     },
     {
       title: 'Corregedoria',
       items: [
         { label: 'Punição Administrativa', href: '/painel/punicoes', icon: Scale, visible: true },
-      ]
-    },
-    {
-      title: 'Comunicação',
-      items: [
-        { label: 'Chat APM', href: '/painel/chat/apm', icon: MessageSquare, visible: hasApmAccess },
-        { label: 'Chat Alto Comando', href: '/painel/chat/alto-comando', icon: MessageSquare, visible: isAltoComando },
       ]
     },
     {

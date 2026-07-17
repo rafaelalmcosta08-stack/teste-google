@@ -109,37 +109,10 @@ export async function POST(req: NextRequest) {
     if (!validPatentes.includes(patenteNome)) {
       return NextResponse.json({ error: 'Patente inválida.' }, { status: 400 })
     }
-
-    const isComandante = cargos.some((c: string) =>
-      ['Comando Bope', 'Comando Core', 'Comando GAR', 'Comando GAEP', 'Comando GTM', 'Diretor APM', 'Diretor Corregedoria'].includes(c)
-    )
-
-    if (!isAltoComando && !isComandante) {
-      return NextResponse.json({
-        error: 'Você não tem permissão para solicitar alteração de patente. Apenas comandantes ou Alto Comando.'
-      }, { status: 403 })
-    }
   } else {
-    // Regras de unidade e cargo do comandante solicitante
-    const UNIT_COMMANDERS: Record<string, string> = {
-      'BOPE': 'Comando Bope',
-      'CORE': 'Comando Core',
-      'GAR': 'Comando GAR',
-      'GAEP': 'Comando GAEP',
-      'GTM': 'Comando GTM',
-      'APM': 'Diretor APM',
-      'Corregedoria': 'Diretor Corregedoria'
-    }
-
-    const requiredCargo = UNIT_COMMANDERS[unidade]
-    if (!requiredCargo) {
+    const validUnits = ['BOPE', 'CORE', 'GAR', 'GAEP', 'GTM', 'APM', 'Corregedoria']
+    if (!validUnits.includes(unidade)) {
       return NextResponse.json({ error: 'Unidade de destino inválida.' }, { status: 400 })
-    }
-
-    if (!isAltoComando && !cargos.includes(requiredCargo)) {
-      return NextResponse.json({
-        error: `Você não tem permissão para solicitar registro para a unidade ${unidade}. Requer o cargo ${requiredCargo}.`
-      }, { status: 403 })
     }
   }
 
