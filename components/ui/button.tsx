@@ -60,12 +60,22 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         'icon-lg': 'size-12',
       }[size as string] || 'h-10 text-sm';
 
+      const shadowClass = 
+        variant === 'destructive' ? 'shadow-lg shadow-red-600/30' :
+        variant === 'secondary' ? 'shadow-md shadow-indigo-950/20' :
+        variant === 'outline' ? 'shadow-sm hover:shadow-indigo-600/10' :
+        'shadow-lg shadow-indigo-600/30';
+
+      const bgClass = variant === 'default' ? 'bg-indigo-600 hover:bg-indigo-500 font-bold' : '';
+
       return (
         <button
           ref={ref}
           className={cn(
             "liquid-glass-btn rounded-lg inline-flex items-center justify-center p-[1.5px] outline-none transition-all disabled:pointer-events-none disabled:opacity-50",
             sizeClasses,
+            shadowClass,
+            bgClass,
             className
           )}
           {...props}
