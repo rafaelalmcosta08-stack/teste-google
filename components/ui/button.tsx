@@ -68,6 +68,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
       const bgClass = variant === 'default' ? 'bg-indigo-600 hover:bg-indigo-500 font-bold' : '';
 
+      const paddingClass = 
+        size === 'icon' || size === 'icon-xs' || size === 'icon-sm' || size === 'icon-lg' ? 'px-0' :
+        size === 'xs' ? 'px-2' :
+        size === 'sm' ? 'px-3' :
+        size === 'lg' ? 'px-8' : 'px-4';
+
       return (
         <button
           ref={ref}
@@ -80,7 +86,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           )}
           {...props}
         >
-          <div className="liquid-glass-inner rounded-lg w-full h-full flex items-center justify-center gap-1.5 px-4 text-white">
+          <div className={cn("liquid-glass-inner rounded-lg w-full h-full flex items-center justify-center gap-1.5 text-white", paddingClass)}>
             {children}
           </div>
         </button>

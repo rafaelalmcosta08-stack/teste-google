@@ -105,7 +105,30 @@ export default function PunicoesPage() {
       const res = await fetch('/api/punicoes')
       if (res.ok) {
         const json = await res.json()
-        setPunicoes(json.punicoes || [])
+        const loadedPunicoes = json.punicoes || []
+        setPunicoes(loadedPunicoes)
+
+        // Mark active warnings targeting this user as read
+        if (session?.user?.id) {
+          const myId = session.user.id
+          try {
+            const readPunicoes: string[] = JSON.parse(localStorage.getItem('read_punicoes_ids') || '[]')
+            let changed = false
+            const myActivePunicoes = loadedPunicoes.filter((p: any) => p.oficialId === myId && p.status === 'ativa')
+            for (const p of myActivePunicoes) {
+              if (!readPunicoes.includes(p.id)) {
+                readPunicoes.push(p.id)
+                changed = true
+              }
+            }
+            if (changed) {
+              localStorage.setItem('read_punicoes_ids', JSON.stringify(readPunicoes))
+              window.dispatchEvent(new CustomEvent('notifications-update'))
+            }
+          } catch (e) {
+            console.error(e)
+          }
+        }
       }
     } catch (e) {
       console.error(e)
@@ -170,6 +193,10 @@ export default function PunicoesPage() {
       if (res.ok) {
         const json = await res.json()
         setChatMessages(json.messages || [])
+        
+        // Mark recourse chat messages as read
+        localStorage.setItem(`last_read_chat_recurso_${punicaoId}`, new Date().toISOString())
+        window.dispatchEvent(new CustomEvent('notifications-update'))
       }
     } catch (e) {
       console.error(e)

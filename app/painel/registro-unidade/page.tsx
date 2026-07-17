@@ -143,6 +143,8 @@ export default function RegistroUnidadePage() {
       if (res.ok) {
         const json = await res.json()
         setRequests(json.solicitacoes ?? [])
+        // Dispatch notifications update event
+        window.dispatchEvent(new CustomEvent('notifications-update'))
       }
     } catch (e) {
       console.error(e)

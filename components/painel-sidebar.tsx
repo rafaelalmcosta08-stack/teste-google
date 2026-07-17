@@ -72,6 +72,9 @@ export function PainelSidebar() {
     if (href === '/painel/editais') return counts.editais
     if (href === '/painel/chat/apm') return counts.chat_apm
     if (href === '/painel/chat/alto-comando') return counts.chat_alto_comando
+    if (href === '/painel/registro-unidade') return counts.registro_unidade
+    if (href === '/painel/punicoes') return counts.corregedoria
+    if (href === '/painel/administracao') return counts.administracao
     return 0
   }
 

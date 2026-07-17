@@ -37,16 +37,13 @@ export async function GET(req: NextRequest) {
     ['Comando Bope', 'Comando Core', 'Comando GAR', 'Comando GAEP', 'Comando GTM', 'Diretor APM', 'Diretor Corregedoria'].includes(c)
   )
 
-  if (!isAltoComando && !isRequester) {
-    return NextResponse.json({ error: 'Acesso negado. Você não tem permissão para ver solicitações.' }, { status: 403 })
-  }
-
-  // Se for Alto Comando, vê tudo. Se for apenas comandante, vê apenas o que ele solicitou ou da sua unidade
+  // Permitir que qualquer usuário aprovado consulte as solicitações, porém restringindo o escopo:
+  // - Alto Comando vê tudo
+  // - Demais usuários veem apenas se forem o requerente ou o oficial alvo (marcado)
   let query = admin.from('registro_unidades').select('*')
   
   if (!isAltoComando) {
-    // Filtrar apenas criadas por ele
-    query = query.eq('requerente_id', requester.id)
+    query = query.or(`requerente_id.eq.${requester.id},oficial_id.eq.${requester.id}`)
   }
 
   const { data: solicitacoes, error } = await query.order('created_at', { ascending: false })
