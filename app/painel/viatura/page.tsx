@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
+import { cleanImageUrl } from '@/lib/utils'
 import { 
   Car, 
   Search, 
@@ -313,7 +314,7 @@ export default function ViaturaPage() {
                 {/* Imagem */}
                 <div className="relative h-48 w-full bg-secondary/15 overflow-hidden border-b border-border/10">
                   <img
-                    src={item.photoUrl || 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=500&q=80'}
+                    src={cleanImageUrl(item.photoUrl) || 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=500&q=80'}
                     alt={item.name}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     referrerPolicy="no-referrer"
