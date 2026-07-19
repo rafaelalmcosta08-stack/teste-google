@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { resolveImageUrl } from '@/lib/image-resolver'
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -87,13 +88,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
 
+    const resolvedPhotoUrl = await resolveImageUrl(photoUrl || '')
     const finalCode = code?.trim() || `ARM-${Math.floor(1000 + Math.random() * 9000)}`
     const minPatenteStr = Array.isArray(minPatente) ? JSON.stringify(minPatente) : String(minPatente).trim()
 
     const newArmamento = {
       id: Math.random().toString(36).substring(2, 15),
       name: name.trim(),
-      photo_url: photoUrl?.trim() || null,
+      photo_url: resolvedPhotoUrl || null,
       code: finalCode,
       category: category.trim(),
       min_patente: minPatenteStr,
@@ -129,12 +131,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ID do armamento é obrigatório.' }, { status: 400 })
     }
 
+    const resolvedPhotoUrl = await resolveImageUrl(photoUrl || '')
     const finalCode = code?.trim() || `ARM-${Math.floor(1000 + Math.random() * 9000)}`
     const minPatenteStr = Array.isArray(minPatente) ? JSON.stringify(minPatente) : minPatente ? String(minPatente).trim() : 'Recruta'
 
     const updated = {
       name: name?.trim(),
-      photo_url: photoUrl?.trim() || null,
+      photo_url: resolvedPhotoUrl || null,
       code: finalCode,
       category: category?.trim(),
       min_patente: minPatenteStr,

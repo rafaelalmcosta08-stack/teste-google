@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { resolveImageUrl } from '@/lib/image-resolver'
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -87,10 +88,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
 
+    const resolvedPhotoUrl = await resolveImageUrl(photoUrl || '')
     const newFardamento = {
       id: Math.random().toString(36).substring(2, 15),
       name: name.trim(),
-      photo_url: photoUrl?.trim() || null,
+      photo_url: resolvedPhotoUrl || null,
       code: code.trim(),
       category: category.trim(),
       allowed_units: Array.isArray(allowedUnits) ? allowedUnits : [],
@@ -126,9 +128,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ID do fardamento é obrigatório.' }, { status: 400 })
     }
 
+    const resolvedPhotoUrl = await resolveImageUrl(photoUrl || '')
     const updated = {
       name: name?.trim(),
-      photo_url: photoUrl?.trim() || null,
+      photo_url: resolvedPhotoUrl || null,
       code: code?.trim(),
       category: category?.trim(),
       allowed_units: Array.isArray(allowedUnits) ? allowedUnits : [],
