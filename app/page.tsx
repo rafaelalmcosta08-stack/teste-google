@@ -24,7 +24,7 @@ export default function HomePage() {
               <div className="absolute inset-0 -z-10 rounded-full bg-black/40 blur-2xl pointer-events-none" />
               <img
                 src="https://res.cloudinary.com/epo1w9hl/image/upload/v1784175681/POLICIAASPECT_copiar_qdvopk.png"
-                alt="Polícia Aspect Logo"
+                alt="Nômade - Assistente Virtual Logo"
                 className="h-44 w-44 sm:h-56 sm:w-56 object-contain select-none pointer-events-none drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)] transition-transform duration-500 group-hover:scale-105"
                 referrerPolicy="no-referrer"
               />
@@ -32,14 +32,13 @@ export default function HomePage() {
           </div>
 
           <h1 className="max-w-4xl text-5xl font-bold leading-[1.05] tracking-tight text-balance sm:text-7xl">
-            <span className="text-white">Departamento de Polícia</span>
+            <span className="text-white">Nômade</span>
             <br />
-            <span className="text-white">Aspect</span>
+            <span className="text-white/80 text-3xl sm:text-5xl font-medium tracking-normal">Assistente Virtual do Departamento</span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-white">
-            Servir e Proteger. Junte-se a nós na missão de garantir a segurança e o bem-estar de
-            todos os cidadãos.
+          <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-white/90">
+            Sua assistente virtual e central de inteligência operacional. Acesso rápido a manuais, diretrizes, fichas e procedimentos do Departamento de Polícia.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">

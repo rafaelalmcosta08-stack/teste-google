@@ -182,12 +182,12 @@ export function PainelSidebar() {
             href="/painel"
             onClick={sidebar.close}
             className="flex items-center px-4 mb-6 outline-none shrink-0"
-            title="Polícia Aspect"
+            title="Nômade - Assistente Virtual"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-transparent">
               <img
                 src="https://res.cloudinary.com/epo1w9hl/image/upload/v1784175681/POLICIAASPECT_copiar_qdvopk.png"
-                alt="Polícia Aspect Logo"
+                alt="Nômade Logo"
                 className="h-10 w-10 object-contain hover:scale-110 transition-transform duration-300"
                 referrerPolicy="no-referrer"
               />
@@ -197,7 +197,7 @@ export function PainelSidebar() {
                 isExpanded ? 'opacity-100 translate-x-0' : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
               }`}
             >
-              Painel Geral
+              Nômade OS
             </span>
           </Link>
   

@@ -253,7 +253,7 @@ export default function ViaturaPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Garagem de Viaturas</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Lista de viaturas e veículos oficiais da Polícia Aspect, prefixos operacionais e patentes mínimas autorizadas para condução.
+            Lista de viaturas e veículos oficiais monitorados pela Nômade, prefixos operacionais e patentes mínimas autorizadas para condução.
           </p>
         </div>
 

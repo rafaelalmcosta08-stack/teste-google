@@ -4,7 +4,7 @@ import { Clock } from 'lucide-react'
 const secoes: Record<string, { titulo: string; descricao: string }> = {
   fardamento: {
     titulo: 'Fardamento',
-    descricao: 'Regulamentos e padrões de fardamento do Departamento de Polícia Aspect.',
+    descricao: 'Regulamentos e padrões de fardamento do Departamento de Polícia.',
   },
   armamento: {
     titulo: 'Armamento',
@@ -12,7 +12,7 @@ const secoes: Record<string, { titulo: string; descricao: string }> = {
   },
   hierarquia: {
     titulo: 'Hierarquia',
-    descricao: 'Estrutura hierárquica e patentes do Departamento de Polícia Aspect.',
+    descricao: 'Estrutura hierárquica e patentes do Departamento de Polícia.',
   },
   cursos: {
     titulo: 'Cursos',

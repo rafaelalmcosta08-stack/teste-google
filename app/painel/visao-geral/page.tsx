@@ -303,7 +303,7 @@ export default function VisaoGeralPage() {
           Visão Geral da Corporação
         </h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-          Painel analítico exclusivo do Alto Comando para controle operacional, administrativo e pedagógico do Departamento de Polícia Aspect.
+          Painel analítico do Alto Comando para controle operacional, administrativo e pedagógico assistido pela Nômade.
         </p>
       </div>
 

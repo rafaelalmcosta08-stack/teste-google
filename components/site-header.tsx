@@ -27,14 +27,19 @@ export function SiteHeader() {
           <div className="h-11 w-11 shrink-0 overflow-hidden flex items-center justify-center">
             <img
               src="https://res.cloudinary.com/epo1w9hl/image/upload/v1784175681/POLICIAASPECT_copiar_qdvopk.png"
-              alt="Polícia Aspect Logo"
+              alt="Nômade Logo"
               className="h-10 w-10 object-contain group-hover:scale-110 transition-transform duration-300"
               referrerPolicy="no-referrer"
             />
           </div>
-          <span className="text-base font-bold tracking-tight text-white transition-colors duration-300 group-hover:text-primary-foreground/90">
-            Polícia Aspect
-          </span>
+          <div className="flex flex-col">
+            <span className="text-base font-bold tracking-tight text-white transition-colors duration-300 group-hover:text-primary-foreground/90 leading-none">
+              Nômade
+            </span>
+            <span className="text-[10px] text-muted-foreground font-mono font-medium tracking-wide">
+              Assistente Virtual
+            </span>
+          </div>
         </Link>
 
         <nav

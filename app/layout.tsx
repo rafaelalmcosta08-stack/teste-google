@@ -17,9 +17,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Polícia Aspect | Departamento de Polícia',
+  title: 'Nômade | Assistente Virtual do Departamento de Polícia',
   description:
-    'Departamento de Polícia Aspect - Servir e Proteger. Manual de Estudo TAFF, unidades e recrutamento.',
+    'Nômade - Assistente Virtual Operacional do Departamento de Polícia. Central de inteligência, procedimentos, fichas e manuais.',
   generator: 'v0.app',
 }
 

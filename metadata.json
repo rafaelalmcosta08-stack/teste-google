@@ -1,6 +1,6 @@
 {
-  "name": "Polícia Aspect",
-  "description": "Departamento de Polícia Aspect - Servir e Proteger. Manual de Estudo TAFF, unidades e recrutamento.",
+  "name": "Nômade - Assistente Virtual",
+  "description": "Nômade - Assistente Virtual e Central Operacional Inteligente do Departamento de Polícia.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

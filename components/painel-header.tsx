@@ -165,12 +165,12 @@ export function PainelHeader() {
             <Link href="/painel" className="flex items-center gap-2.5">
               <img
                 src="https://res.cloudinary.com/epo1w9hl/image/upload/v1784175681/POLICIAASPECT_copiar_qdvopk.png"
-                alt="Logo"
+                alt="Nômade Logo"
                 className="h-7 w-7 object-contain hidden xs:block"
                 referrerPolicy="no-referrer"
               />
               <span className="text-sm sm:text-base font-bold tracking-tight text-foreground transition-opacity hover:opacity-90">
-                Polícia Aspect
+                Nômade
               </span>
             </Link>
           </div>

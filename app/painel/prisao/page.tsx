@@ -249,7 +249,7 @@ export default function PrisaoPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Registro de Prisões</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Histórico permanente de detenções da Polícia Aspect para controle de fichas criminais e corregedoria.
+            Histórico permanente de detenções gerenciado pela Nômade para controle de fichas criminais e corregedoria.
           </p>
         </div>
 

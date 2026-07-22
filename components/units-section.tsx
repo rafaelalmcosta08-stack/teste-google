@@ -9,7 +9,7 @@ export function UnitsSection() {
           Nossas Unidades
         </h2>
         <p className="mt-4 text-pretty leading-relaxed text-muted-foreground">
-          Conheça as diferentes unidades do Departamento de Polícia Aspect e suas responsabilidades
+          Conheça as diferentes unidades do Departamento de Polícia integradas à Nômade e suas responsabilidades
           na manutenção da segurança pública.
         </p>
       </div>
