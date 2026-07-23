@@ -146,21 +146,19 @@ export default function ManualCondutaPage() {
                   <AccordionItem
                     key={section.id}
                     value={section.id}
-                    className="overflow-hidden rounded-xl border border-border/60 bg-card/60 px-2 shadow-sm"
+                    data-stagger
+                    className="overflow-hidden rounded-xl border border-border/60 bg-card/60 px-2"
                   >
-                    <AccordionTrigger className="px-4 py-5 hover:no-underline text-left">
-                      <div className="flex items-start gap-4">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                          <Icon className="h-5 w-5 text-foreground" />
+                    <AccordionTrigger className="px-4 py-5 hover:no-underline">
+                      <span className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
+                          <Icon className="h-4 w-4 text-foreground" />
                         </span>
-                        <div>
-                          <span className="text-base font-bold text-foreground block">{section.titulo}</span>
-                          <span className="text-xs text-muted-foreground mt-0.5 block font-normal">{section.resumo}</span>
-                        </div>
-                      </div>
+                        <span className="text-base font-semibold">{section.titulo}</span>
+                      </span>
                     </AccordionTrigger>
-                    <AccordionContent className="px-4 pb-6 pl-14 border-t border-border/10 pt-4">
-                      <p className="whitespace-pre-wrap leading-relaxed text-sm text-muted-foreground/90">{section.conteudo}</p>
+                    <AccordionContent className="px-4 pb-6 pl-16">
+                      <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">{section.conteudo}</p>
                     </AccordionContent>
                   </AccordionItem>
                 )
